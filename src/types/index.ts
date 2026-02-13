@@ -25,6 +25,15 @@ export interface Employee {
   producerPool?: string[]; // IDs of preferred producers
 }
 
+// Availability types for employees
+export type AvailabilityStatus = 'available' | 'unavailable_full' | 'unavailable_from' | 'unavailable_until';
+
+export interface PartialAvailability {
+  date: string; // YYYY-MM-DD
+  status: AvailabilityStatus;
+  time?: string; // HH:MM format, only for unavailable_from or unavailable_until
+}
+
 export type ShiftTypeID = 'MORNING' | 'LATE' | 'NIGHT' | 'WEEKEND_DAY';
 
 export interface ShiftType {
