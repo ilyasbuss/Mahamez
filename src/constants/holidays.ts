@@ -27,12 +27,42 @@ export const HOLIDAYS_2026: Holiday[] = [
     { date: '2026-11-01', name: 'Allerheiligen', states: ['BW', 'RP'] },
 ];
 
+export interface SchoolHoliday {
+    start: string;
+    end: string;
+    name: string;
+    state: 'BW' | 'RP';
+}
+
+export const SCHOOL_HOLIDAYS_2026: SchoolHoliday[] = [
+    // Baden-Württemberg
+    { start: '2026-03-30', end: '2026-04-11', name: 'Osterferien', state: 'BW' },
+    { start: '2026-05-26', end: '2026-06-05', name: 'Pfingstferien', state: 'BW' },
+    { start: '2026-07-30', end: '2026-09-12', name: 'Sommerferien', state: 'BW' },
+    { start: '2026-10-26', end: '2026-10-31', name: 'Herbstferien', state: 'BW' },
+    { start: '2026-12-23', end: '2026-12-31', name: 'Weihnachtsferien', state: 'BW' }, // Ends 2027, but capping here
+
+    // Rheinland-Pfalz
+    { start: '2026-03-30', end: '2026-04-10', name: 'Osterferien', state: 'RP' },
+    { start: '2026-06-29', end: '2026-08-07', name: 'Sommerferien', state: 'RP' },
+    { start: '2026-10-05', end: '2026-10-16', name: 'Herbstferien', state: 'RP' },
+    { start: '2026-12-23', end: '2026-12-31', name: 'Weihnachtsferien', state: 'RP' }, // Ends 2027
+];
+
 // Helper function to check if a date is a holiday in a specific state
 export const isHoliday = (date: string, state: 'BW' | 'RP'): Holiday | null => {
     const holiday = HOLIDAYS_2026.find(
         h => h.date === date && (h.states.includes(state) || h.states.includes('ALL'))
     );
     return holiday || null;
+};
+
+// Helper function for school holidays
+export const isSchoolHoliday = (date: string, state: 'BW' | 'RP'): boolean => {
+    return SCHOOL_HOLIDAYS_2026.some(sh => {
+        if (sh.state !== state) return false;
+        return date >= sh.start && date <= sh.end;
+    });
 };
 
 // Get holiday display text for a date (e.g., "BW, RP" or "BW")

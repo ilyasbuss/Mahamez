@@ -3,7 +3,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMont
 import { de } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Ban, Clock, X, Plus } from 'lucide-react';
 import { PartialAvailability, AvailabilityStatus } from '../../types';
-import { getHolidayStates, isHoliday, HOLIDAYS_2026 } from '../../constants/holidays';
+import { getHolidayStates, isHoliday, HOLIDAYS_2026, isSchoolHoliday } from '../../constants/holidays';
 
 interface AvailabilityCalendarProps {
     currentMonth: Date;
@@ -114,9 +114,9 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
         }
     };
 
-    // Generate month options for jump selector (current year +/- 1 year)
+    // Generate month options for jump selector (-2 months to +6 months)
     const monthOptions = [];
-    for (let i = -12; i <= 12; i++) {
+    for (let i = -2; i <= 6; i++) {
         const monthDate = addMonths(new Date(), i);
         monthOptions.push(monthDate);
     }
@@ -135,17 +135,22 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                         </button>
 
                         {/* Integrated Month Selector */}
-                        <select
-                            value={format(currentMonth, 'yyyy-MM')}
-                            onChange={(e) => onMonthJump(new Date(e.target.value + '-01'))}
-                            className="px-3 py-1.5 border-0 bg-transparent text-lg font-bold text-slate-800 hover:bg-slate-50 focus:outline-none focus:bg-slate-50 rounded-lg cursor-pointer capitalize"
-                        >
-                            {monthOptions.map((month) => (
-                                <option key={format(month, 'yyyy-MM')} value={format(month, 'yyyy-MM')}>
-                                    {format(month, 'MMMM yyyy', { locale: de })}
-                                </option>
-                            ))}
-                        </select>
+                        <div className="relative">
+                            <select
+                                value={format(currentMonth, 'yyyy-MM')}
+                                onChange={(e) => onMonthJump(new Date(e.target.value + '-01'))}
+                                className="pl-3 pr-10 py-1.5 border-0 bg-transparent text-lg font-bold text-slate-800 hover:bg-slate-50 focus:outline-none focus:bg-slate-50 rounded-lg cursor-pointer capitalize appearance-none"
+                            >
+                                {monthOptions.map((month) => (
+                                    <option key={format(month, 'yyyy-MM')} value={format(month, 'yyyy-MM')}>
+                                        {format(month, 'MMMM yyyy', { locale: de })}
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                <ChevronRight size={16} className="rotate-90" />
+                            </div>
+                        </div>
 
                         <button
                             onClick={() => onMonthChange(addMonths(currentMonth, 1))}
@@ -168,9 +173,9 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
 
                 {/* Calendar Grid */}
                 <div className="p-4">
-                    <div className="grid grid-cols-7 mb-2">
+                    <div className="grid grid-cols-7 mb-4">
                         {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((day, idx) => (
-                            <div key={day} className={`text-center text-[10px] font-bold uppercase tracking-wider py-1.5 ${idx >= 5 ? 'text-purple-400' : 'text-slate-400'}`}>
+                            <div key={day} className={`text-center text-xs font-bold uppercase tracking-widest py-2 ${idx >= 5 ? 'text-purple-500' : 'text-slate-500'}`}>
                                 {day}
                             </div>
                         ))}
@@ -187,60 +192,68 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                             const rpHoliday = isHoliday(dateStr, 'RP');
                             const holidayData = bwHoliday || rpHoliday;
 
+                            const isBwSchool = isSchoolHoliday(dateStr, 'BW');
+                            const isRpSchool = isSchoolHoliday(dateStr, 'RP');
+                            const isSchool = isBwSchool || isRpSchool;
+
                             return (
                                 <button
                                     key={dateStr}
                                     onClick={() => isCurrentMonth && handleDayClick(day)}
                                     disabled={!isCurrentMonth}
                                     className={`
-                    relative rounded-xl flex flex-col items-center justify-center border transition-all duration-200 py-2 px-1
+                    relative rounded-xl flex flex-col items-center border transition-all duration-200 py-4 px-2 min-h-[90px]
                     ${!isCurrentMonth ? 'opacity-20 cursor-not-allowed bg-slate-50/30 border-slate-50' : ''}
                     ${isCurrentMonth && holidayData
                                             ? 'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-300 shadow-sm'
                                             : isCurrentMonth && isUnavailable
                                                 ? 'bg-red-50 border-red-200 text-red-600'
-                                                : isCurrentMonth && isWknd
-                                                    ? 'bg-purple-50/50 border-purple-100'
-                                                    : isCurrentMonth
-                                                        ? 'bg-white border-slate-100 hover:border-purple-200 hover:shadow-md'
-                                                        : ''
+                                                : isCurrentMonth && isSchool
+                                                    ? 'bg-orange-50/40 border-orange-100'
+                                                    : isCurrentMonth && isWknd
+                                                        ? 'bg-purple-50/50 border-purple-100'
+                                                        : isCurrentMonth
+                                                            ? 'bg-white border-slate-100 hover:border-purple-200 hover:shadow-md'
+                                                            : ''
                                         }
                   `}
                                 >
-                                    <span className={`text-sm font-bold mb-0.5 ${!isCurrentMonth ? 'text-slate-300' : holidayData ? 'text-orange-700' : isUnavailable ? 'text-red-600' : 'text-slate-700'}`}>
-                                        {format(day, 'd')}
-                                    </span>
-
-                                    {/* Holiday Name */}
+                                    {/* Holiday Name at Top */}
                                     {holidayData && isCurrentMonth && (
-                                        <span className="text-[8px] font-medium text-orange-600 text-center leading-tight px-0.5 mb-1">
-                                            {holidayData.name.split(' ').map(word => word.substring(0, 4)).join(' ')}
+                                        <span className="text-[9px] font-bold text-orange-700 text-center leading-normal px-1 mb-auto w-full line-clamp-2">
+                                            {holidayData.name}
                                         </span>
                                     )}
 
+                                    {/* Availability Status in Middle */}
                                     {isUnavailable && avail && (
-                                        <div className="flex flex-col items-center">
-                                            {avail.status === 'unavailable_full' && <Ban size={12} className="opacity-50" />}
+                                        <div className={`flex flex-col items-center ${holidayData ? '' : 'mt-auto'}`}>
+                                            {avail.status === 'unavailable_full' && <Ban size={16} className="opacity-50" />}
                                             {(avail.status === 'unavailable_from' || avail.status === 'unavailable_until') && (
-                                                <Clock size={10} className="opacity-50" />
+                                                <Clock size={14} className="opacity-50" />
                                             )}
                                             {avail.time && (
-                                                <span className="text-[8px] font-medium mt-0.5">{avail.time}</span>
+                                                <span className="text-[10px] font-bold mt-1">{avail.time}</span>
                                             )}
                                         </div>
                                     )}
 
-                                    {/* Holiday State Badges */}
-                                    {(bwHoliday || rpHoliday) && isCurrentMonth && (
-                                        <div className="absolute top-0.5 right-0.5">
+                                    {/* Day Number Bottom Left */}
+                                    <span className={`absolute bottom-2 left-2 text-sm font-black ${!isCurrentMonth ? 'text-slate-300' : holidayData ? 'text-orange-700' : isUnavailable ? 'text-red-600' : 'text-slate-700'}`}>
+                                        {format(day, 'd')}
+                                    </span>
+
+                                    {/* State Badges Top Right */}
+                                    {(bwHoliday || rpHoliday || isBwSchool || isRpSchool) && isCurrentMonth && (
+                                        <div className="absolute top-1.5 right-1.5">
                                             <div className="flex gap-0.5">
-                                                {bwHoliday && (
-                                                    <span className="text-[7px] font-bold bg-orange-500 text-white px-1 py-0.5 rounded shadow-sm">
+                                                {(bwHoliday || isBwSchool) && (
+                                                    <span className={`text-[7px] font-bold text-white px-1 py-0.5 rounded shadow-sm ${bwHoliday ? 'bg-orange-500' : 'bg-orange-300'}`}>
                                                         BW
                                                     </span>
                                                 )}
-                                                {rpHoliday && (
-                                                    <span className="text-[7px] font-bold bg-blue-500 text-white px-1 py-0.5 rounded shadow-sm">
+                                                {(rpHoliday || isRpSchool) && (
+                                                    <span className={`text-[7px] font-bold text-white px-1 py-0.5 rounded shadow-sm ${rpHoliday ? 'bg-blue-500' : 'bg-blue-300'}`}>
                                                         RP
                                                     </span>
                                                 )}
@@ -279,8 +292,8 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                             key={status}
                                             onClick={() => setTempStatus(status)}
                                             className={`w-full text-left px-4 py-3 rounded-xl border-2 transition-all ${tempStatus === status
-                                                    ? 'border-[#4B2C82] bg-purple-50/50'
-                                                    : 'border-slate-100 hover:border-slate-200 bg-white'
+                                                ? 'border-[#4B2C82] bg-purple-50/50'
+                                                : 'border-slate-100 hover:border-slate-200 bg-white'
                                                 }`}
                                         >
                                             <span className="font-bold text-sm">{getStatusLabel(status)}</span>
@@ -415,54 +428,56 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                             </div>
 
                             {/* Last Day Options */}
-                            <div>
-                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
-                                    Letzter Tag
-                                </label>
-                                <div className="space-y-2">
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="radio"
-                                            checked={bulkLastDayType === 'full'}
-                                            onChange={() => setBulkLastDayType('full')}
-                                            className="w-4 h-4"
-                                        />
-                                        <span className="text-sm font-medium">Ganzer Tag</span>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+                                        Letzter Tag
                                     </label>
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="radio"
-                                            checked={bulkLastDayType === 'from'}
-                                            onChange={() => setBulkLastDayType('from')}
-                                            className="w-4 h-4"
-                                        />
-                                        <span className="text-sm font-medium">Abwesend ab</span>
-                                        {bulkLastDayType === 'from' && (
+                                    <div className="space-y-2">
+                                        <label className="flex items-center gap-2 cursor-pointer">
                                             <input
-                                                type="time"
-                                                value={bulkLastDayTime}
-                                                onChange={(e) => setBulkLastDayTime(e.target.value)}
-                                                className="ml-2 border rounded-lg px-2 py-1 text-sm"
+                                                type="radio"
+                                                checked={bulkLastDayType === 'full'}
+                                                onChange={() => setBulkLastDayType('full')}
+                                                className="w-4 h-4"
                                             />
-                                        )}
-                                    </label>
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="radio"
-                                            checked={bulkLastDayType === 'until'}
-                                            onChange={() => setBulkLastDayType('until')}
-                                            className="w-4 h-4"
-                                        />
-                                        <span className="text-sm font-medium">Abwesend bis</span>
-                                        {bulkLastDayType === 'until' && (
+                                            <span className="text-sm font-medium">Ganzer Tag</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer">
                                             <input
-                                                type="time"
-                                                value={bulkLastDayTime}
-                                                onChange={(e) => setBulkLastDayTime(e.target.value)}
-                                                className="ml-2 border rounded-lg px-2 py-1 text-sm"
+                                                type="radio"
+                                                checked={bulkLastDayType === 'from'}
+                                                onChange={() => setBulkLastDayType('from')}
+                                                className="w-4 h-4"
                                             />
-                                        )}
-                                    </label>
+                                            <span className="text-sm font-medium">Abwesend ab</span>
+                                            {bulkLastDayType === 'from' && (
+                                                <input
+                                                    type="time"
+                                                    value={bulkLastDayTime}
+                                                    onChange={(e) => setBulkLastDayTime(e.target.value)}
+                                                    className="ml-2 border rounded-lg px-2 py-1 text-sm"
+                                                />
+                                            )}
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                checked={bulkLastDayType === 'until'}
+                                                onChange={() => setBulkLastDayType('until')}
+                                                className="w-4 h-4"
+                                            />
+                                            <span className="text-sm font-medium">Abwesend bis</span>
+                                            {bulkLastDayType === 'until' && (
+                                                <input
+                                                    type="time"
+                                                    value={bulkLastDayTime}
+                                                    onChange={(e) => setBulkLastDayTime(e.target.value)}
+                                                    className="ml-2 border rounded-lg px-2 py-1 text-sm"
+                                                />
+                                            )}
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
 
