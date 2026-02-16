@@ -45,6 +45,7 @@ import {
   ArrowUpDown,
   Settings2
 } from 'lucide-react';
+import MahamezLogo from '../components/MahamezLogo';
 import {
   BarChart,
   Bar,
@@ -61,6 +62,7 @@ import { autoScheduleShifts } from '../services/geminiService';
 import EditEmployeeModal from '../components/planner/EditEmployeeModal';
 import ShiftCalendar from '../components/planner/ShiftCalendar';
 import EmployeeList from '../components/planner/EmployeeList';
+import RulesConfig from '../components/planner/RulesConfig';
 
 const generateId = (): string => {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
@@ -111,8 +113,8 @@ const INITIAL_SKILL_GROUPS: SkillGroup[] = [
     departments: ['Radio-Redaktion']
   },
   {
-    id: "g_show_support",
-    title: "Sendungs-Begleitung",
+    id: "g_moderation",
+    title: "Moderation",
     roles: [
       { name: 'Mod POPNACHT', startTime: '00:00', endTime: '05:00', defaultPercentage: 100, defaultPriority: 1 },
       { name: 'Mod Morningshow', startTime: '04:30', endTime: '11:00', defaultPercentage: 100, defaultPriority: 1 },
@@ -124,8 +126,8 @@ const INITIAL_SKILL_GROUPS: SkillGroup[] = [
       { name: 'Redakteur PUSH', startTime: '08:30', endTime: '17:15', defaultPercentage: 100, defaultPriority: 2 },
       { name: 'Mod MOVE', startTime: '11:15', endTime: '20:00', defaultPercentage: 100, defaultPriority: 1 },
       { name: 'Redakteur MOVE', startTime: '11:15', endTime: '20:00', defaultPercentage: 100, defaultPriority: 2 },
-      { name: 'Mod POP', startTime: '15:15', endTime: '00:00', defaultPercentage: 100, defaultPriority: 1 },
-      { name: 'Redakteur POP', startTime: '14:30', endTime: '23:15', defaultPercentage: 100, defaultPriority: 2 }
+      { name: 'Redakteur POP', startTime: '14:30', endTime: '23:15', defaultPercentage: 100, defaultPriority: 2 },
+      { name: 'Mod POP', startTime: '15:15', endTime: '00:00', defaultPercentage: 100, defaultPriority: 1 }
     ],
     departments: ['Radio-Redaktion']
   },
@@ -189,16 +191,6 @@ const COLORS = ['#4B2C82', '#6B46C1', '#805AD5', '#9F7AEA', '#B794F4', '#D6BCFA'
 const VERTRAGS_OPTIONEN = ["Festangestellt (befristet)", "Festangestellt (unbefristet)", "Frei (befristet)", "Frei (unbefristet)"];
 const REDAKTIONS_OPTIONEN: Redaktion[] = ["Radio-Redaktion", "Online-Redaktion", "Sounddesign"];
 
-const MahamezLogo = () => (
-  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-[#9F7AEA]">
-    <circle cx="12" cy="12" r="8" stroke="#f97316" opacity="0.8" />
-    <rect x="4" y="4" width="6" height="6" rx="1.5" />
-    <rect x="14" y="4" width="6" height="6" rx="1.5" />
-    <rect x="4" y="14" width="6" height="6" rx="1.5" />
-    <rect x="14" y="14" width="6" height="6" rx="1.5" />
-  </svg>
-);
-
 interface DeleteConfirmation {
   isOpen: boolean;
   type: 'employee' | 'shift' | 'role' | 'group';
@@ -247,6 +239,7 @@ const PlannerDashboard: React.FC = () => {
   const [deleteTimer, setDeleteTimer] = useState(0);
   const timerRef = useRef<number | null>(null);
   const [roleTabFilters, setRoleTabFilters] = useState<Redaktion[]>([]);
+  const [selectedDept, setSelectedDept] = useState<string>('Radioredaktion');
 
   const [shadowingRows, setShadowingRows] = useState<Set<string>>(new Set());
 
@@ -501,7 +494,12 @@ const PlannerDashboard: React.FC = () => {
 
   // Logic moved to EmployeeList component
 
-  const filteredSkillGroups = useMemo(() => roleTabFilters.length === 0 ? skillGroups : skillGroups.filter(g => g.departments.some(d => roleTabFilters.includes(d))), [skillGroups, roleTabFilters]);
+  const filteredSkillGroups = useMemo(() => {
+    if (selectedDept === 'Moderation') return skillGroups.filter(g => g.id === 'g_moderation');
+    if (selectedDept === 'Onlineredaktion') return skillGroups.filter(g => g.departments.includes('Online-Redaktion'));
+    // Default to Radioredaktion (Radio-Redaktion dept, excluding moderation group)
+    return skillGroups.filter(g => g.departments.includes('Radio-Redaktion') && g.id !== 'g_moderation');
+  }, [skillGroups, selectedDept]);
 
   const allRolesWithShadowing = useMemo(() => {
     const temp: (RoleDefinition & { groupId: string; isShadowing?: boolean; originalRoleName: string; hasThickBorder?: boolean })[] = [];
@@ -627,6 +625,27 @@ const PlannerDashboard: React.FC = () => {
         </header>
 
         {(activeTab === 'calendar' || activeTab === 'new-plan') && (
+          <div className="flex gap-2 mb-4">
+            {['Radioredaktion', 'Moderation', 'Onlineredaktion'].map((dept) => (
+              <button
+                key={dept}
+                onClick={() => {
+                  setSelectedDept(dept);
+                  if (dept === 'Onlineredaktion') setRoleTabFilters(['Online-Redaktion']);
+                  else setRoleTabFilters(['Radio-Redaktion']);
+                }}
+                className={`px-6 py-2.5 rounded-2xl font-bold text-sm transition-all shadow-sm ${selectedDept === dept
+                  ? 'bg-[#4B2C82] text-white shadow-lg shadow-purple-900/20'
+                  : 'bg-white text-slate-400 hover:bg-slate-50'
+                  }`}
+              >
+                {dept}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {(activeTab === 'calendar' || activeTab === 'new-plan') && (
           <ShiftCalendar
             weekDays={weekDays}
             shifts={shifts}
@@ -698,13 +717,7 @@ const PlannerDashboard: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'rules' && (
-          <div className="bg-white p-6 border rounded-2xl shadow-sm text-center py-10">
-            <Settings2 size={40} className="mx-auto text-slate-200 mb-3" />
-            <h3 className="text-lg font-bold text-slate-800 mb-1">In Vorbereitung</h3>
-            <p className="text-slate-400 text-sm">Hier werden bald Regeln verwaltet.</p>
-          </div>
-        )}
+        {activeTab === 'rules' && <RulesConfig />}
 
         {activeTab === 'stats' && (
           <div className="bg-white p-4 border rounded-2xl shadow-sm">

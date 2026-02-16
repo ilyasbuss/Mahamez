@@ -1,23 +1,71 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Lock } from 'lucide-react';
+import { Mail, Lock, AlertCircle } from 'lucide-react';
+import { useAuth } from '../services/AuthContext';
+import MahamezLogo from '../components/MahamezLogo';
 
 const Login: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [lockCountdown, setLockCountdown] = useState<number | null>(null);
+    const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
+
+    const { login } = useAuth();
     const navigate = useNavigate();
 
-    const handleLogin = (e: React.FormEvent) => {
-        e.preventDefault();
-        // MOCK AUTHENTICATION
-        localStorage.setItem('mahamez_auth', 'true');
-        localStorage.setItem('mahamez_user_email', email);
+    useEffect(() => {
+        let interval: number;
+        if (lockCountdown !== null && lockCountdown > 0) {
+            interval = window.setInterval(() => {
+                setLockCountdown(prev => (prev !== null && prev > 0) ? prev - 1 : null);
+            }, 1000);
+        }
+        return () => window.clearInterval(interval);
+    }, [lockCountdown]);
 
-        // Simple mock logic to direct to different views
-        if (email.includes('planer')) {
-            navigate('/planner');
-        } else {
-            navigate('/availability');
+    const formatTime = (seconds: number) => {
+        const mm = Math.floor(seconds / 60).toString().padStart(2, '0');
+        const ss = (seconds % 60).toString().padStart(2, '0');
+        return `${mm}:${ss}`;
+    };
+
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
+        setLoading(true);
+
+        try {
+            const response = await fetch('http://localhost:8000/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                login(data.access_token, data.refresh_token, data.user);
+                navigate(data.user.role === 'planer' ? '/planner' : '/availability');
+            } else if (response.status === 423) {
+                // Locked
+                const lockedUntil = data.locked_until ? new Date(data.locked_until).getTime() : Date.now() + 1800000;
+                const diff = Math.max(0, Math.floor((lockedUntil - Date.now()) / 1000));
+                setLockCountdown(diff);
+                setError(data.detail);
+            } else if (response.status === 401) {
+                setError(data.detail);
+                if (data.remaining_attempts) {
+                    setRemainingAttempts(data.remaining_attempts);
+                }
+            } else {
+                setError(data.detail || "Ein Fehler ist aufgetreten.");
+            }
+        } catch (err) {
+            setError("Verbindungsfehler zum Server. Ist das Backend gestartet?");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -25,25 +73,48 @@ const Login: React.FC = () => {
         <div className="min-h-screen bg-[#1D0B40] flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden p-8 animate-in fade-in zoom-in duration-300">
                 <div className="text-center mb-8">
-                    <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-[#4B2C82]">
-                        <Users size={32} />
+                    <div className="w-[120px] h-[120px] bg-purple-50 rounded-[32px] flex items-center justify-center mx-auto mb-6">
+                        <MahamezLogo className="w-20 h-20" />
                     </div>
-                    <h1 className="text-2xl font-bold text-slate-800">Willkommen bei Mahamez</h1>
-                    <p className="text-slate-500 mt-2">Bitte melden Sie sich an</p>
+                    <h1 className="text-2xl font-bold text-slate-800">Dienstplanung - Anmelden</h1>
+                    <p className="text-slate-400 font-bold tracking-widest mt-2 uppercase text-xs">SWR</p>
                 </div>
+
+                {error && (
+                    <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 flex items-start gap-3 rounded-r-xl animate-in slide-in-from-top-2">
+                        <AlertCircle size={20} className="shrink-0 mt-0.5" />
+                        <div>
+                            <p className="text-sm font-medium">{error}</p>
+                            {lockCountdown !== null && lockCountdown > 0 && (
+                                <p className="text-xs font-bold mt-1">
+                                    Warten Sie: {formatTime(lockCountdown)}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {remainingAttempts !== null && remainingAttempts <= 5 && remainingAttempts > 0 && !lockCountdown && (
+                    <div className="mb-4 text-center">
+                        <p className="text-xs font-bold text-amber-600">
+                            Noch {remainingAttempts} Versuche brig, bevor Account gesperrt wird.
+                        </p>
+                    </div>
+                )}
 
                 <form onSubmit={handleLogin} className="space-y-4">
                     <div>
                         <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Email Adresse</label>
                         <div className="relative">
-                            <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                             <input
                                 type="email"
                                 required
+                                disabled={loading || (lockCountdown !== null && lockCountdown > 0)}
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-[#4B2C82] focus:ring-1 focus:ring-[#4B2C82] transition font-medium text-slate-700"
-                                placeholder="name@firma.de"
+                                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-[#4B2C82] focus:ring-1 focus:ring-[#4B2C82] transition font-medium text-slate-700 disabled:opacity-50"
+                                placeholder="name@swr.de"
                             />
                         </div>
                     </div>
@@ -55,24 +126,29 @@ const Login: React.FC = () => {
                             <input
                                 type="password"
                                 required
+                                disabled={loading || (lockCountdown !== null && lockCountdown > 0)}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-[#4B2C82] focus:ring-1 focus:ring-[#4B2C82] transition font-medium text-slate-700"
+                                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-[#4B2C82] focus:ring-1 focus:ring-[#4B2C82] transition font-medium text-slate-700 disabled:opacity-50"
                                 placeholder="••••••••"
                             />
                         </div>
                     </div>
 
-                    <button type="submit" className="w-full bg-[#4B2C82] hover:bg-[#5B3798] text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-purple-900/20 flex items-center justify-center gap-2 mt-2">
-                        Anmelden
+                    <div className="text-right">
+                        <button type="button" className="text-xs font-semibold text-[#4B2C82] hover:underline">
+                            Passwort vergessen?
+                        </button>
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={loading || (lockCountdown !== null && lockCountdown > 0)}
+                        className="w-full bg-[#4B2C82] hover:bg-[#5B3798] text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-purple-900/20 flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
+                    >
+                        {loading ? "Wird angemeldet..." : "Anmelden"}
                     </button>
                 </form>
-
-                <div className="mt-6 text-center">
-                    <p className="text-xs text-slate-400">
-                        Tipp: 'planer@...' für Planer-Ansicht,<br />andere für Mitarbeiter-Ansicht.
-                    </p>
-                </div>
             </div>
         </div>
     );

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Calendar, ClipboardList, Clock, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PartialAvailability } from '../types';
 import AvailabilityCalendar from '../components/employee/AvailabilityCalendar';
 import CurrentSchedule from '../components/employee/CurrentSchedule';
 import MyShifts from '../components/employee/MyShifts';
+import EmployeeAnalytics from '../components/employee/EmployeeAnalytics';
+import { Calendar, ClipboardList, Clock, LogOut, TrendingUp } from 'lucide-react';
 
 // Mahamez Logo Component (matching PlannerDashboard)
 const MahamezLogo = () => (
@@ -17,7 +18,7 @@ const MahamezLogo = () => (
     </svg>
 );
 
-type TabType = 'availability' | 'schedule' | 'shifts';
+type TabType = 'availability' | 'schedule' | 'shifts' | 'analyse';
 
 const Availability: React.FC = () => {
     const navigate = useNavigate();
@@ -83,6 +84,15 @@ const Availability: React.FC = () => {
                         <Clock size={18} />
                         <span>Meine Schichten</span>
                     </button>
+
+                    <button
+                        onClick={() => setActiveTab('analyse')}
+                        className={`w-full flex items-center space-x-3 px-4 py-2 rounded-lg transition ${activeTab === 'analyse' ? 'bg-[#4B2C82]' : 'hover:bg-white/10'
+                            }`}
+                    >
+                        <TrendingUp size={18} />
+                        <span>Analyse</span>
+                    </button>
                 </div>
 
 
@@ -96,7 +106,7 @@ const Availability: React.FC = () => {
                         <h1 className="text-2xl font-bold text-slate-800">
                             {activeTab === 'availability' ? 'Verfügbarkeiten eintragen' :
                                 activeTab === 'schedule' ? 'Aktueller Dienstplan' :
-                                    'Meine Schichten'}
+                                    activeTab === 'shifts' ? 'Meine Schichten' : 'Auslastung & Analyse'}
                         </h1>
                     </div>
                     <div className="flex items-center gap-3">
