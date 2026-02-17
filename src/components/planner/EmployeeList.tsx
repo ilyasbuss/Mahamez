@@ -1,15 +1,41 @@
 import React, { useMemo, useState } from 'react';
 import { Search, ChevronDown, ChevronUp, Edit2 } from 'lucide-react';
-import { Employee } from '../../types';
+import { Employee, SkillGroup } from '../../types';
 
 interface EmployeeListProps {
     employees: Employee[];
+    skillGroups: SkillGroup[];
     onEdit: (e: Employee) => void;
 }
 
-const EmployeeList: React.FC<EmployeeListProps> = ({ employees, onEdit }) => {
+const EmployeeList: React.FC<EmployeeListProps> = ({ employees, skillGroups, onEdit }) => {
     const [employeeSearchTerm, setEmployeeSearchTerm] = useState('');
     const [employeeSort, setEmployeeSort] = useState<{ key: 'name' | 'roles', direction: 'asc' | 'desc' | null }>({ key: null, direction: null });
+
+    const getDepartmentInitial = (employee: Employee): string => {
+        const deptWeights: Record<string, number> = {};
+
+        employee.skillAssignments.forEach(sa => {
+            const group = skillGroups.find(g => g.roles.some(r => r.name === sa.skill));
+            if (group && group.departments.length > 0) {
+                const primaryDept = group.departments[0];
+                deptWeights[primaryDept] = (deptWeights[primaryDept] || 0) + sa.percentage;
+            }
+        });
+
+        let dominantDept = '';
+        let maxWeight = -1;
+
+        Object.entries(deptWeights).forEach(([dept, weight]) => {
+            if (weight > maxWeight) {
+                maxWeight = weight;
+                dominantDept = dept;
+            }
+        });
+
+        if (!dominantDept) return employee.name.charAt(0).toUpperCase();
+        return dominantDept.charAt(0).toUpperCase();
+    };
 
     const toggleEmployeeSort = (key: 'name' | 'roles') => {
         setEmployeeSort(prev => ({
@@ -33,7 +59,6 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ employees, onEdit }) => {
                 return 0;
             });
         } else {
-            // Default sort by last name
             result.sort((a, b) => {
                 const lastA = a.name.split(' ').pop()?.toLowerCase() || '';
                 const lastB = b.name.split(' ').pop()?.toLowerCase() || '';
@@ -65,9 +90,36 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ employees, onEdit }) => {
                     <tbody className="divide-y">
                         {filteredEmployees.map(e => (
                             <tr key={e.id} className="hover:bg-slate-50 transition">
-                                <td className="px-4 py-2 flex items-center space-x-3"><div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center text-[#4B2C82] font-bold text-xs">{e.name.charAt(0)}</div><div><div className="font-medium text-slate-700 text-sm leading-tight">{e.name}</div><div className="text-[10px] text-slate-400">{e.email || 'Keine Email'} • {e.role}</div></div></td>
-                                <td className="px-4 py-2"><div className="flex flex-wrap gap-1">{e.skillAssignments.slice(0, 3).map((sa, i) => <span key={i} className="bg-purple-50 text-[#4B2C82] border border-purple-100 px-1.5 py-0.5 rounded-md text-[10px] font-medium">{sa.skill}</span>)}</div></td>
-                                <td className="px-4 py-2 text-right"><button onClick={() => onEdit(e)} className="p-1 text-slate-400 hover:text-[#4B2C82] transition"><Edit2 size={13} /></button></td>
+                                <td className="px-4 py-2 flex items-center space-x-3">
+                                    <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center text-[#4B2C82] font-bold text-xs">
+                                        {getDepartmentInitial(e)}
+                                    </div>
+                                    <div>
+                                        <div className="font-medium text-slate-700 text-sm leading-tight">{e.name}</div>
+                                        <div className="text-[10px] text-slate-400">{e.email || 'Keine Email'} • {e.role}</div>
+                                    </div>
+                                </td>
+                                <td className="px-4 py-2">
+                                    <div className="flex flex-wrap gap-1">
+                                        {e.skillAssignments
+                                            .sort((a, b) => b.skill.localeCompare(a.skill))
+                                            .slice(0, 3)
+                                            .map((sa, i) => (
+                                                <span key={i} className="bg-purple-50 text-[#4B2C82] border border-purple-100 px-1.5 py-0.5 rounded-md text-[10px] font-medium">
+                                                    {sa.skill}
+                                                </span>
+                                            ))
+                                        }
+                                        {e.skillAssignments.length > 3 && (
+                                            <span className="text-[9px] text-slate-400 self-center">+{e.skillAssignments.length - 3}</span>
+                                        )}
+                                    </div>
+                                </td>
+                                <td className="px-4 py-2 text-right">
+                                    <button onClick={() => onEdit(e)} className="p-1 text-slate-400 hover:text-[#4B2C82] transition">
+                                        <Edit2 size={13} />
+                                    </button>
+                                </td>
                             </tr>
                         ))}
                     </tbody>

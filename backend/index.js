@@ -7,15 +7,16 @@ const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const rateLimit = require('express-rate-limit');
 
+const path = require('path');
 dotenv.config();
 
 const app = express();
-const db = new Database('mahamez.db');
+const db = new Database(path.join(__dirname, 'mahamez.db'));
 const PORT = process.env.PORT || 8000;
 
 app.use(express.json());
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://localhost:5173'],
+    origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:3001'],
     credentials: true
 }));
 

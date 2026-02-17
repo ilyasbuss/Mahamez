@@ -95,7 +95,7 @@ const ShiftCalendar: React.FC<ShiftCalendarProps> = ({
                                                 {isCellActive && (
                                                     <div ref={dropdownRef} className="absolute left-0 top-full z-[100] w-48 bg-white border border-slate-200 rounded-xl shadow-2xl py-1 max-h-56 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-1">
                                                         {employees
-                                                            .filter(e => expandedSelects.has(cellKey) || e.skillAssignments.some(sa => sa.skill === (r.isShadowing ? r.name.replace('Mitlaufen ', '') : r.name)))
+                                                            .filter(e => expandedSelects.has(cellKey) || r.name === 'Sonstige Dienste' || e.skillAssignments.some(sa => sa.skill === (r.isShadowing ? r.name.replace('Mitlaufen ', '') : r.name)))
                                                             .sort((a, b) => a.name.localeCompare(b.name))
                                                             .map(e => (
                                                                 <button key={e.id} onClick={() => { onAddShift(e.id, dateStr, r.name); setActiveDropdown(null); }} className="w-full text-left px-3 py-1.5 hover:bg-purple-50 text-[11px] font-medium text-slate-600 transition-colors">{e.name}</button>

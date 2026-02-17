@@ -18,6 +18,18 @@ const VERTRAGS_OPTIONEN = ["Festangestellt (befristet)", "Festangestellt (unbefr
 const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, employee, skillGroups, onClose, onSave, onDelete }) => {
     const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
     const [isRolesExpanded, setIsRolesExpanded] = useState(true);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteTimer, setDeleteTimer] = useState(0);
+
+    useEffect(() => {
+        let interval: number;
+        if (isDeleting && deleteTimer > 0) {
+            interval = window.setInterval(() => {
+                setDeleteTimer(prev => prev - 1);
+            }, 1000);
+        }
+        return () => window.clearInterval(interval);
+    }, [isDeleting, deleteTimer]);
 
     useEffect(() => {
         if (isOpen && employee) {
@@ -149,7 +161,41 @@ const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, employee,
                         <button type="submit" className="flex-1 py-2.5 bg-[#4B2C82] text-white font-bold rounded-2xl hover:bg-[#5B3798]">Speichern</button>
                         <button type="button" onClick={onClose} className="flex-1 py-2.5 border rounded-2xl text-slate-500 font-bold hover:bg-slate-50">Abbrechen</button>
                         {!editingEmployee.id.startsWith('new-') && (
-                            <button type="button" onClick={() => onDelete(editingEmployee)} className="p-2.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-2xl"><Trash2 size={20} /></button>
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (isDeleting) {
+                                            if (deleteTimer === 0) {
+                                                onDelete(editingEmployee);
+                                                setIsDeleting(false);
+                                            }
+                                        } else {
+                                            setIsDeleting(true);
+                                            setDeleteTimer(5);
+                                        }
+                                    }}
+                                    className={`p-2.5 rounded-2xl font-bold transition-all flex items-center gap-2 ${isDeleting
+                                        ? (deleteTimer > 0 ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-900/20')
+                                        : 'bg-red-50 text-red-600 hover:bg-red-100'}`}
+                                >
+                                    <Trash2 size={20} />
+                                    {isDeleting && (
+                                        <span className="text-xs">
+                                            {deleteTimer > 0 ? `Löschen (${deleteTimer}s)` : 'Jetzt Löschen'}
+                                        </span>
+                                    )}
+                                </button>
+                                {isDeleting && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsDeleting(false)}
+                                        className="p-2.5 text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-2xl text-xs font-bold"
+                                    >
+                                        Abbrechen
+                                    </button>
+                                )}
+                            </div>
                         )}
                     </div>
                 </form>
