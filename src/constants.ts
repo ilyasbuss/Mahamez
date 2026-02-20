@@ -67,7 +67,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
   {
     id: '3',
     name: 'Vanessa Auer',
-    role: 'Festangestellt (befristet)',
+    role: 'fest frei, unbefristet',
     departments: ['Radio-Redaktion', 'Online-Redaktion'],
     skillAssignments: [
       { skill: 'Redakteur PUSH', percentage: 50, priority: 1 },
@@ -376,5 +376,5 @@ export const INITIAL_SKILL_GROUPS: SkillGroup[] = [
 
 export const HOURS_PER_SHIFT = 8;
 export const COLORS = ['#4B2C82', '#6B46C1', '#805AD5', '#9F7AEA', '#B794F4', '#D6BCFA', '#7C3AED', '#5B21B6', '#4C1D95'];
-export const VERTRAGS_OPTIONEN = ["Festangestellt (befristet)", "Festangestellt (unbefristet)", "Frei (befristet)", "Frei (unbefristet)"];
+export const VERTRAGS_OPTIONEN = ["Festangestellt (befristet)", "Festangestellt (unbefristet)", "Frei (befristet)", "Frei (unbefristet)", "fest frei, unbefristet"];
 export const REDAKTIONS_OPTIONEN: Redaktion[] = ["Radio-Redaktion", "Online-Redaktion", "Sounddesign"];

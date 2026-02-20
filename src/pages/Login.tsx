@@ -73,9 +73,9 @@ const Login: React.FC = () => {
     return (
         <div className="min-h-screen bg-[#1D0B40] flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden p-8 animate-in fade-in zoom-in duration-300">
-                <div className="text-center mb-8">
-                    <div className="w-[120px] h-[120px] bg-purple-50 rounded-[32px] flex items-center justify-center mx-auto mb-6">
-                        <MahamezLogo className="w-20 h-20" />
+                <div className="text-center mb-10">
+                    <div className="flex items-center justify-center mx-auto mb-6">
+                        <MahamezLogo className="w-24 h-24" />
                     </div>
                     <h1 className="text-2xl font-bold text-slate-800">Dienstplanung - Anmelden</h1>
                     <p className="text-slate-400 font-bold tracking-widest mt-2 uppercase text-xs">SWR</p>

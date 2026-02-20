@@ -12,7 +12,13 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ employees, skillGroups, onE
     const [employeeSearchTerm, setEmployeeSearchTerm] = useState('');
     const [employeeSort, setEmployeeSort] = useState<{ key: 'name' | 'roles', direction: 'asc' | 'desc' | null }>({ key: null, direction: null });
 
-    const getDepartmentInitial = (employee: Employee): string => {
+    const getDisplayNameInitials = (employee: Employee): string => {
+        if (employee.editorialMemberships && employee.editorialMemberships.length > 0) {
+            return employee.editorialMemberships
+                .map(dept => dept.charAt(0).toUpperCase())
+                .join('');
+        }
+
         const deptWeights: Record<string, number> = {};
 
         employee.skillAssignments.forEach(sa => {
@@ -92,7 +98,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ employees, skillGroups, onE
                             <tr key={e.id} className="hover:bg-slate-50 transition">
                                 <td className="px-4 py-2 flex items-center space-x-3">
                                     <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center text-[#4B2C82] font-bold text-xs">
-                                        {getDepartmentInitial(e)}
+                                        {getDisplayNameInitials(e)}
                                     </div>
                                     <div>
                                         <div className="font-medium text-slate-700 text-sm leading-tight">{e.name}</div>

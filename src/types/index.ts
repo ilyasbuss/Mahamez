@@ -22,6 +22,8 @@ export interface Employee {
   contractHours: number; // Interpretation: Teilzeitgrad (0-100) or contract days
   preferredShifts: ShiftTypeID[];
   unavailability: string[]; // ISO Dates
+  editorialMemberships?: string[];
+  absences?: { id: string; start: string; end: string }[];
   producerPool?: string[]; // IDs of preferred producers
 }
 

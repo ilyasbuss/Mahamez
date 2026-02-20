@@ -50,7 +50,9 @@ db.exec(`
         invitation_token TEXT,
         invitation_expires DATETIME,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        known_ips TEXT DEFAULT '[]'
+        known_ips TEXT DEFAULT '[]',
+        editorial_memberships TEXT DEFAULT '[]',
+        absences TEXT DEFAULT '[]'
     );
 
     CREATE TABLE IF NOT EXISTS refresh_tokens (

@@ -67,7 +67,7 @@ export const usePlannerDashboard = () => {
 
     useEffect(() => {
         if (deleteConf.isOpen) {
-            setDeleteTimer(5);
+            setDeleteTimer(3);
             if (timerRef.current) clearInterval(timerRef.current);
             timerRef.current = window.setInterval(() => {
                 setDeleteTimer((prev) => {

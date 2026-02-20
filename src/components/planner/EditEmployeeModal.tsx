@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Users, X, ChevronUp, ChevronDown, CheckCircle2, PieChart as PieChartIcon, Lock, Unlock, Trash2 } from 'lucide-react';
+import { Users, X, ChevronUp, ChevronDown, CheckCircle2, PieChart as PieChartIcon, Lock, Unlock, Trash2, Mail, Plus, Calendar, Send } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { Employee, SkillGroup, SkillAssignment, Skill, RoleDefinition, Redaktion } from '../../types';
+import { REDAKTIONS_OPTIONEN } from '../../constants';
 
 interface EditEmployeeModalProps {
     isOpen: boolean;
@@ -113,8 +114,81 @@ const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, employee,
                         <div className="space-y-4">
                             <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Name</label><input type="text" required value={editingEmployee.name} onChange={(e) => setEditingEmployee({ ...editingEmployee, name: e.target.value })} className="w-full border rounded-xl px-3 py-2 outline-none focus:border-[#4B2C82] bg-slate-50 font-medium text-sm" /></div>
                             <div className="grid grid-cols-2 gap-4">
-                                <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Email (Login)</label><input type="email" value={editingEmployee.email || ''} onChange={(e) => setEditingEmployee({ ...editingEmployee, email: e.target.value })} className="w-full border rounded-xl px-3 py-2 outline-none focus:border-[#4B2C82] bg-slate-50 font-medium text-sm" placeholder="name@mahamez.de" /></div>
-                                <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">System-Rolle</label><select value={editingEmployee.systemRole || 'EMPLOYEE'} onChange={(e) => setEditingEmployee({ ...editingEmployee, systemRole: e.target.value as any })} className="w-full border rounded-xl px-3 py-2 outline-none focus:border-[#4B2C82] bg-slate-50 font-medium text-sm"><option value="EMPLOYEE">Mitarbeiter</option><option value="PLANNER">Planer (Admin)</option></select></div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Email (Login)</label>
+                                    <div className="flex gap-2">
+                                        <input type="email" value={editingEmployee.email || ''} onChange={(e) => setEditingEmployee({ ...editingEmployee, email: e.target.value })} className="flex-1 border rounded-xl px-3 py-2 outline-none focus:border-[#4B2C82] bg-slate-50 font-medium text-sm transition-all focus:ring-2 focus:ring-purple-100" placeholder="name@mahamez.de" />
+                                        <button type="button" title="Einladung erneut senden" className="p-2 border rounded-xl bg-white text-slate-400 hover:text-[#4B2C82] hover:bg-purple-50 transition shadow-sm"><Send size={14} /></button>
+                                    </div>
+                                </div>
+                                <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">System-Rolle</label><select value={editingEmployee.systemRole || 'EMPLOYEE'} onChange={(e) => setEditingEmployee({ ...editingEmployee, systemRole: e.target.value as any })} className="w-full border rounded-xl px-3 py-2 outline-none focus:border-[#4B2C82] bg-slate-50 font-medium text-sm transition-all focus:ring-2 focus:ring-purple-100"><option value="EMPLOYEE">Mitarbeiter</option><option value="PLANNER">Planer (Admin)</option></select></div>
+                            </div>
+
+                            <div className="bg-purple-50/30 rounded-2xl p-4 border border-purple-100 space-y-3">
+                                <label className="block text-[10px] font-bold text-[#4B2C82] uppercase tracking-widest">Abwesenheit eintragen</label>
+                                <div className="flex items-center gap-3">
+                                    <div className="flex-1 relative">
+                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4B2C82] pointer-events-none"><Calendar size={14} /></div>
+                                        <input
+                                            type="date"
+                                            className="w-full pl-10 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-[#4B2C82] focus:ring-2 focus:ring-purple-100 transition-all appearance-none cursor-pointer"
+                                            onChange={(e) => {
+                                                const start = e.target.value;
+                                                if (!start) return;
+                                                const currentAbs = editingEmployee.absences || [];
+                                                setEditingEmployee({ ...editingEmployee, absences: [...currentAbs, { id: `${Date.now()}`, start, end: start }] });
+                                            }}
+                                        />
+                                    </div>
+                                    <span className="text-slate-400 font-bold text-xs uppercase">bis</span>
+                                    <div className="flex-1 relative">
+                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4B2C82] pointer-events-none"><Calendar size={14} /></div>
+                                        <input
+                                            type="date"
+                                            className="w-full pl-10 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-[#4B2C82] focus:ring-2 focus:ring-purple-100 transition-all appearance-none cursor-pointer"
+                                            onChange={(e) => {
+                                                const end = e.target.value;
+                                                if (!end) return;
+                                                const currentAbs = editingEmployee.absences || [];
+                                                if (currentAbs.length > 0) {
+                                                    const last = currentAbs[currentAbs.length - 1];
+                                                    const next = [...currentAbs.slice(0, -1), { ...last, end }];
+                                                    setEditingEmployee({ ...editingEmployee, absences: next });
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {(editingEmployee.absences || []).map((abs) => (
+                                        <div key={abs.id} className="flex items-center gap-2 px-3 py-1.5 bg-white border border-purple-100 rounded-xl text-[11px] font-bold text-[#4B2C82] shadow-sm animate-in fade-in slide-in-from-top-1">
+                                            <span>{abs.start} - {abs.end}</span>
+                                            <button type="button" onClick={() => setEditingEmployee({ ...editingEmployee, absences: (editingEmployee.absences || []).filter(a => a.id !== abs.id) })} className="text-slate-300 hover:text-red-500 transition"><X size={12} /></button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Redaktionszugehörigkeit</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {REDAKTIONS_OPTIONEN.map(dept => {
+                                        const isSelected = (editingEmployee.editorialMemberships || []).includes(dept);
+                                        return (
+                                            <button
+                                                key={dept}
+                                                type="button"
+                                                onClick={() => {
+                                                    const current = editingEmployee.editorialMemberships || [];
+                                                    const next = isSelected ? current.filter(d => d !== dept) : [...current, dept];
+                                                    setEditingEmployee({ ...editingEmployee, editorialMemberships: next });
+                                                }}
+                                                className={`px-3 py-1.5 rounded-xl border text-[11px] font-bold transition-all ${isSelected ? 'border-[#4B2C82] bg-purple-50 text-[#4B2C82]' : 'border-slate-100 bg-white text-slate-400 hober:bg-slate-50'}`}
+                                            >
+                                                {dept}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Vertrag</label><select required value={editingEmployee.role} onChange={(e) => setEditingEmployee({ ...editingEmployee, role: e.target.value })} className="w-full border rounded-xl px-3 py-2 outline-none focus:border-[#4B2C82] bg-slate-50 font-medium text-sm">{VERTRAGS_OPTIONEN.map(opt => (<option key={opt} value={opt}>{opt}</option>))}</select></div>

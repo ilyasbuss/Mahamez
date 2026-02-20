@@ -228,30 +228,30 @@ const PlannerDashboard: React.FC = () => {
               })}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {filteredSkillGroups.map(group => (
                 <div key={group.id} className="bg-white border border-slate-200 rounded-3xl shadow-sm flex flex-col hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 group">
-                  <div className="p-4 border-b flex flex-col gap-1.5 bg-slate-50/50 rounded-t-3xl">
+                  <div className="p-3 border-b flex flex-col gap-1 bg-slate-50/50 rounded-t-3xl text-xs">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                        <div className="p-1 bg-purple-100 rounded-lg"><LayoutGrid size={14} className="text-[#4B2C82]" /></div>
+                      <h3 className="font-bold text-slate-800 flex items-center gap-1.5">
+                        <div className="p-1 bg-purple-100 rounded-lg"><LayoutGrid size={12} className="text-[#4B2C82]" /></div>
                         {group.title}
                       </h3>
-                      <button onClick={() => setEditingGroup(group)} className="p-1.5 text-slate-400 hover:text-[#4B2C82] transition rounded-lg hover:bg-white"><Edit2 size={14} /></button>
+                      <button onClick={() => setEditingGroup(group)} className="p-1 text-slate-400 hover:text-[#4B2C82] transition rounded-lg hover:bg-white"><Edit2 size={12} /></button>
                     </div>
                   </div>
-                  <div className="p-4 space-y-2.5 flex-1">
+                  <div className="p-3 space-y-2 flex-1">
                     {group.roles.map(role => (
-                      <div key={role.name} className="flex flex-col gap-1.5 p-3 rounded-2xl border border-slate-100 bg-slate-50/30 hover:bg-purple-50/50 hover:border-purple-100 transition relative group/item">
-                        <span className="font-bold text-slate-700 text-[13px] leading-tight block pr-8">{role.name}</span>
-                        <div className="flex items-center gap-3">
-                          <span className="text-[9px] text-slate-400 font-medium flex items-center gap-1"><Clock size={9} /> {role.startTime} - {role.endTime}</span>
-                          <div className="bg-white border px-1.5 py-0.5 rounded text-[9px] font-bold text-slate-400 shrink-0">Prio {role.defaultPriority}</div>
+                      <div key={role.name} className="flex flex-col gap-1 p-2 rounded-2xl border border-slate-100 bg-slate-50/30 hover:bg-purple-50/50 hover:border-purple-100 transition relative group/item">
+                        <span className="font-bold text-slate-700 text-[16px] leading-tight block pr-8">{role.name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[14px] text-slate-400 font-bold flex items-center gap-1"><Clock size={12} /> {role.startTime} - {role.endTime}</span>
+                          <div className="bg-white border px-1 py-0.5 rounded text-[10px] font-bold text-slate-400 shrink-0">Prio {role.defaultPriority}</div>
                         </div>
-                        <button onClick={() => setEditingRole({ role, groupId: group.id })} className="absolute top-2.5 right-2.5 opacity-0 group-hover/item:opacity-100 transition-opacity p-1 text-slate-300 hover:text-[#4B2C82]"><Edit2 size={12} /></button>
+                        <button onClick={() => setEditingRole({ role, groupId: group.id })} className="absolute top-2 right-2 opacity-0 group-hover/item:opacity-100 transition-opacity p-1 text-slate-300 hover:text-[#4B2C82]"><Edit2 size={12} /></button>
                       </div>
                     ))}
-                    <button onClick={() => setEditingRole({ role: { name: '', startTime: '08:00', endTime: '17:00', defaultPercentage: 100, defaultPriority: 2 }, groupId: group.id, isNew: true })} className="w-full py-2.5 border-2 border-dashed border-slate-100 rounded-2xl text-[9px] font-bold text-slate-300 uppercase tracking-widest hover:border-[#4B2C82]/20 hover:text-[#4B2C82] transition-all flex items-center justify-center gap-2 mt-2"><Plus size={12} /> Rolle hinzufügen</button>
+                    <button onClick={() => setEditingRole({ role: { name: '', startTime: '08:00', endTime: '17:00', defaultPercentage: 100, defaultPriority: 2 }, groupId: group.id, isNew: true })} className="w-full py-2 border-2 border-dashed border-slate-100 rounded-2xl text-[9px] font-bold text-slate-300 uppercase tracking-widest hover:border-[#4B2C82]/20 hover:text-[#4B2C82] transition-all flex items-center justify-center gap-2 mt-1"><Plus size={10} /> Rolle hinzufügen</button>
                   </div>
                 </div>
               ))}
