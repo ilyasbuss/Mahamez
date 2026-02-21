@@ -332,9 +332,10 @@ export const INITIAL_SKILL_GROUPS: SkillGroup[] = [
     title: "Regional",
     roles: [
       { name: 'Redakteur Stuttgart 1', startTime: '08:00', endTime: '16:45', defaultPercentage: 100, defaultPriority: 2 },
-      { name: 'Redakteur Stuttgart 2', startTime: '08:00', endTime: '16:45', defaultPercentage: 100, defaultPriority: 2 },
+      { name: 'Redakteur Stuttgart 2', startTime: '09:00', endTime: '17:45', defaultPercentage: 100, defaultPriority: 2 },
       { name: 'Redakteur Mainz 1', startTime: '08:00', endTime: '16:45', defaultPercentage: 100, defaultPriority: 2 },
-      { name: 'Redakteur Mainz 2', startTime: '08:00', endTime: '16:45', defaultPercentage: 100, defaultPriority: 2 }
+      { name: 'Redakteur Mainz 2', startTime: '09:00', endTime: '17:45', defaultPercentage: 100, defaultPriority: 2 },
+      { name: 'Reporter Elchbus', startTime: '06:00', endTime: '18:00', defaultPercentage: 100, defaultPriority: 2 }
     ],
     departments: ['Radio-Redaktion']
   },
@@ -349,26 +350,11 @@ export const INITIAL_SKILL_GROUPS: SkillGroup[] = [
     departments: ['Radio-Redaktion', 'Sounddesign']
   },
   {
-    id: "g_qm",
-    title: "Qualitätsmanagement",
-    roles: [
-      { name: 'Qualitätsmanagement', startTime: '09:00', endTime: '17:00', defaultPercentage: 100, defaultPriority: 2 }
-    ],
-    departments: ['Radio-Redaktion']
-  },
-  {
-    id: "g_reporter",
-    title: "Reporter",
-    roles: [
-      { name: 'Reporter Elchbus', startTime: '06:00', endTime: '18:00', defaultPercentage: 100, defaultPriority: 2 }
-    ],
-    departments: ['Radio-Redaktion']
-  },
-  {
     id: "g_sonstige",
     title: "Sonstige",
     roles: [
-      { name: 'Sonstige Dienste', startTime: '08:00', endTime: '17:00', defaultPercentage: 100, defaultPriority: 3 }
+      { name: 'Sonstige Dienste', startTime: '08:00', endTime: '17:00', defaultPercentage: 100, defaultPriority: 3 },
+      { name: 'Qualitätsmanagement', startTime: '09:00', endTime: '17:00', defaultPercentage: 100, defaultPriority: 2 }
     ],
     departments: ['Radio-Redaktion', 'Online-Redaktion', 'Sounddesign']
   }

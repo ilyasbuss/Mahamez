@@ -134,8 +134,12 @@ export const usePlannerDashboard = () => {
     const deleteShift = useCallback((id: string) => {
         const shift = shifts.find(s => s.id === id);
         const emp = employees.find(e => e.id === shift?.employeeId);
-        setDeleteConf({ isOpen: true, type: 'shift', id, name: `Schicht von ${emp?.name || 'Mitarbeiter'}` });
+        setDeleteConf({ isOpen: true, type: 'shift', id, name: `${emp?.name || 'Mitarbeiter'} als ${shift?.roleName || 'Schicht'}` });
     }, [shifts, employees]);
+
+    const handleDeleteEmployee = useCallback((emp: Employee) => {
+        setDeleteConf({ isOpen: true, type: 'employee', id: emp.id, name: emp.name });
+    }, []);
 
     const handleOpenAddModal = useCallback(() => {
         const newEmp: Employee = { id: `new-${generateId()}`, name: '', email: '', systemRole: 'EMPLOYEE', role: VERTRAGS_OPTIONEN[0], departments: [], skillAssignments: [], maxHoursPerWeek: 40, contractHours: 100, preferredShifts: [], unavailability: [], producerPool: [] };
@@ -285,6 +289,7 @@ export const usePlannerDashboard = () => {
         handleAiOptimize, addManualShift, deleteShift,
         handleOpenAddModal, handleOpenEditModal, handleSaveEmployee,
         confirmDeleteAction, handleCloseModal, handlePreviousWeek, handleNextWeek,
-        handleCloseDeleteConf, handleExport, toggleShadowing, toggleDepartmentFilter
+        handleCloseDeleteConf, handleExport, toggleShadowing, toggleDepartmentFilter,
+        handleDeleteEmployee
     };
 };

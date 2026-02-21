@@ -130,11 +130,11 @@ const CurrentSchedule: React.FC = () => {
                                             {shift ? (
                                                 <div className="space-y-2">
                                                     <div className="bg-purple-50 border border-purple-200 rounded-xl p-3">
-                                                        <div className="font-bold text-sm text-slate-800 mb-1">
+                                                        <div className="font-bold text-[16px] text-slate-900 mb-1 leading-tight">
                                                             {shift.role}
                                                         </div>
-                                                        <div className="text-xs text-slate-500 flex items-center gap-1">
-                                                            <Calendar size={12} />
+                                                        <div className="text-[14px] font-bold text-slate-600 flex items-center gap-1">
+                                                            <Calendar size={14} className="text-[#4B2C82]" />
                                                             {shift.time}
                                                         </div>
                                                     </div>

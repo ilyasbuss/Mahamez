@@ -65,6 +65,18 @@ const RoleEditorModal: React.FC<RoleEditorModalProps> = ({
                             />
                         </div>
                     </div>
+                    <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Priorität</label>
+                        <select
+                            value={editingRole.role.defaultPriority}
+                            onChange={(e) => onSetEditingRole({ ...editingRole, role: { ...editingRole.role, defaultPriority: parseInt(e.target.value) } })}
+                            className="w-full border rounded-xl px-3 py-2 outline-none focus:border-[#4B2C82] bg-slate-50 font-medium appearance-none"
+                        >
+                            <option value={1}>1 (Hoch)</option>
+                            <option value={2}>2 (Mittel)</option>
+                            <option value={3}>3 (Niedrig)</option>
+                        </select>
+                    </div>
                     <div className="flex gap-2 mt-4 pt-4 border-t">
                         <button
                             onClick={onSave}
