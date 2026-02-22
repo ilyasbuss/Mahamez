@@ -70,8 +70,13 @@ export const INITIAL_EMPLOYEES: Employee[] = [
     role: 'fest frei, unbefristet',
     departments: ['Radio-Redaktion', 'Online-Redaktion'],
     skillAssignments: [
-      { skill: 'Redakteur PUSH', percentage: 50, priority: 1 },
-      { skill: 'Reporter Elchbus', percentage: 50, priority: 2 }
+      { skill: 'Redakteur PUSH', percentage: 15, priority: 1 },
+      { skill: 'Reporter Elchbus', percentage: 15, priority: 2 },
+      { skill: 'Redakteur Comedy', percentage: 15, priority: 2 },
+      { skill: 'Redakteur 1 Morningshow', percentage: 15, priority: 2 },
+      { skill: 'Redakteur 2 Morningshow', percentage: 15, priority: 2 },
+      { skill: 'Redakteur POP', percentage: 15, priority: 2 },
+      { skill: 'Redakteur NOW', percentage: 10, priority: 2 }
     ],
     maxHoursPerWeek: 40,
     contractHours: 100,
@@ -257,6 +262,27 @@ export const INITIAL_EMPLOYEES: Employee[] = [
     skillAssignments: [{ skill: 'Mod Morningshow', percentage: 100, priority: 1 }],
     maxHoursPerWeek: 40,
     contractHours: 4,
+    preferredShifts: [],
+    unavailability: []
+  },
+  {
+    id: '16',
+    name: 'Jessica Enzminger',
+    role: 'fest frei, befristet',
+    departments: ['Radio-Redaktion'],
+    skillAssignments: [
+      { skill: 'Redakteur 1 Morningshow', percentage: 10, priority: 2 },
+      { skill: 'Redakteur 2 Morningshow', percentage: 10, priority: 2 },
+      { skill: 'Reporter Elchbus', percentage: 10, priority: 2 },
+      { skill: 'Redakteur 1 PA', percentage: 10, priority: 2 },
+      { skill: 'Redakteur 2 PA', percentage: 10, priority: 2 },
+      { skill: 'Redakteur PUSH', percentage: 10, priority: 2 },
+      { skill: 'Redakteur MOVE', percentage: 10, priority: 2 },
+      { skill: 'Redakteur POP', percentage: 20, priority: 2 },
+      { skill: 'Anchor 1', percentage: 10, priority: 2 }
+    ],
+    maxHoursPerWeek: 40,
+    contractHours: 100,
     preferredShifts: [],
     unavailability: []
   }

@@ -10,7 +10,16 @@ interface EmployeeListProps {
 
 const EmployeeList: React.FC<EmployeeListProps> = ({ employees, skillGroups, onEdit }) => {
     const [employeeSearchTerm, setEmployeeSearchTerm] = useState('');
+    const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
     const [employeeSort, setEmployeeSort] = useState<{ key: 'name' | 'roles', direction: 'asc' | 'desc' | null }>({ key: null, direction: null });
+
+    const departments: string[] = ['Radio-Redaktion', 'Online-Redaktion', 'Sounddesign'];
+
+    const toggleDepartment = (dept: string) => {
+        setSelectedDepartments(prev =>
+            prev.includes(dept) ? prev.filter(d => d !== dept) : [...prev, dept]
+        );
+    };
 
     const getDisplayNameInitials = (employee: Employee): string => {
         if (employee.editorialMemberships && employee.editorialMemberships.length > 0) {
@@ -56,6 +65,12 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ employees, skillGroups, onE
             ? employees.filter(e => e.name.toLowerCase().includes(term) || e.role.toLowerCase().includes(term) || e.skillAssignments.some(sa => sa.skill.toLowerCase().includes(term)))
             : [...employees];
 
+        if (selectedDepartments.length > 0) {
+            result = result.filter(e =>
+                e.departments.some(d => selectedDepartments.includes(d))
+            );
+        }
+
         if (employeeSort.key && employeeSort.direction) {
             result.sort((a, b) => {
                 let valA = (employeeSort.key === 'name' ? a.name : (a.skillAssignments[0]?.skill || '')).toLowerCase();
@@ -74,7 +89,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ employees, skillGroups, onE
             });
         }
         return result;
-    }, [employees, employeeSearchTerm, employeeSort]);
+    }, [employees, employeeSearchTerm, employeeSort, selectedDepartments]);
 
     return (
         <div className="space-y-2.5">
@@ -84,13 +99,28 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ employees, skillGroups, onE
                     <input type="text" placeholder="Personen oder Rollen suchen" value={employeeSearchTerm} onChange={(e) => setEmployeeSearchTerm(e.target.value)} className="w-full pl-10 pr-10 py-1.5 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-[#4B2C82]/20 font-medium text-sm" />
                 </div>
             </div>
+            <div className="flex flex-wrap gap-2 px-1">
+                {departments.map(dept => {
+                    const isSelected = selectedDepartments.includes(dept);
+                    return (
+                        <button
+                            key={dept}
+                            onClick={() => toggleDepartment(dept)}
+                            className={`px-3 py-1.5 rounded-xl border text-[11px] font-bold transition-all shadow-sm ${isSelected ? 'border-[#4B2C82] bg-purple-50 text-[#4B2C82]' : 'border-slate-100 bg-white text-slate-400 hover:bg-slate-50'
+                                }`}
+                        >
+                            {dept}
+                        </button>
+                    );
+                })}
+            </div>
             <div className="bg-white border rounded-2xl shadow-sm overflow-hidden">
                 <table className="w-full text-left">
                     <thead className="bg-slate-50 border-b">
                         <tr>
                             <th className="px-4 py-2 text-sm font-semibold text-slate-600 uppercase"><div className="flex items-center gap-2">Team<button onClick={() => toggleEmployeeSort('name')} className={`p-1 rounded hover:bg-slate-200 transition ${employeeSort.key === 'name' ? 'text-[#4B2C82]' : 'text-slate-400'}`}>{employeeSort.key === 'name' && employeeSort.direction === 'desc' ? <ChevronDown size={14} /> : <ChevronUp size={14} />}</button></div></th>
                             <th className="px-4 py-2 text-sm font-semibold text-slate-600 uppercase"><div className="flex items-center gap-2">Rollen<button onClick={() => toggleEmployeeSort('roles')} className={`p-1 rounded hover:bg-slate-200 transition ${employeeSort.key === 'roles' ? 'text-[#4B2C82]' : 'text-slate-400'}`}>{employeeSort.key === 'roles' && employeeSort.direction === 'desc' ? <ChevronDown size={14} /> : <ChevronUp size={14} />}</button></div></th>
-                            <th className="px-4 py-2 text-sm font-semibold text-slate-600 uppercase text-right">Aktionen</th>
+                            <th className="px-4 py-2 text-sm font-semibold text-slate-600 uppercase text-right">Bearbeiten</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y">

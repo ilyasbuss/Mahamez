@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { startOfWeek, addDays, format, parseISO, subWeeks, addWeeks, getISOWeek } from 'date-fns';
 import { Employee, Shift, SkillGroup, RoleDefinition, Redaktion, SkillAssignment, ShiftTypeID } from '../types';
 import { INITIAL_EMPLOYEES, INITIAL_SKILL_GROUPS, VERTRAGS_OPTIONEN } from '../constants';
@@ -40,15 +40,12 @@ export const usePlannerDashboard = () => {
     const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
     const [editingGroup, setEditingGroup] = useState<SkillGroup | null>(null);
     const [editingRole, setEditingRole] = useState<{ role: RoleDefinition; groupId: string; isNew?: boolean } | null>(null);
-    const [isRolesExpanded, setIsRolesExpanded] = useState(true);
+    // Note: isRolesExpanded was removed — it was never used or exported
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
 
     const [snapshot, setSnapshot] = useState<string>('');
     const [cancelConf, setCancelConf] = useState<CancelConfirmation>({ isOpen: false, onConfirm: () => { } });
 
-    const [employeeSearchTerm, setEmployeeSearchTerm] = useState('');
-    const [employeeSort, setEmployeeSort] = useState<{ key: 'name' | 'roles', direction: 'asc' | 'desc' | null }>({ key: null, direction: null });
-    const [prodPoolSearchTerm, setProdPoolSearchTerm] = useState('');
     const [deleteConf, setDeleteConf] = useState<DeleteConfirmation>({ isOpen: false, type: 'employee', id: '', name: '' });
     const [deleteTimer, setDeleteTimer] = useState(0);
     const timerRef = useRef<number | null>(null);
@@ -126,8 +123,8 @@ export const usePlannerDashboard = () => {
         } finally { setIsAiLoading(false); }
     }, [employees, weekDays]);
 
-    const addManualShift = useCallback((employeeId: string, date: string, roleName: string) => {
-        const newShift: Shift = { id: generateId(), employeeId, date, typeId: 'MORNING', roleName };
+    const addManualShift = useCallback((employeeId: string, date: string, roleName: string, customName?: string) => {
+        const newShift: Shift = { id: generateId(), employeeId, date, typeId: 'MORNING', roleName, customName };
         setShifts(prev => [...prev, newShift]);
     }, []);
 
@@ -142,7 +139,7 @@ export const usePlannerDashboard = () => {
     }, []);
 
     const handleOpenAddModal = useCallback(() => {
-        const newEmp: Employee = { id: `new-${generateId()}`, name: '', email: '', systemRole: 'EMPLOYEE', role: VERTRAGS_OPTIONEN[0], departments: [], skillAssignments: [], maxHoursPerWeek: 40, contractHours: 100, preferredShifts: [], unavailability: [], producerPool: [] };
+        const newEmp: Employee = { id: `new-${generateId()}`, name: '', email: '', systemRole: 'EMPLOYEE', role: VERTRAGS_OPTIONEN[0], departments: [], skillAssignments: [], maxHoursPerWeek: 40, contractHours: 100, preferredShifts: [], unavailability: [], prodPoolWith: [], prodPoolWithout: [] };
         setEditingEmployee(newEmp);
         setSnapshot(JSON.stringify(newEmp));
         setIsModalOpen(true);
@@ -154,20 +151,19 @@ export const usePlannerDashboard = () => {
         setIsModalOpen(true);
     }, []);
 
-    const handleSaveEmployee = useCallback((e: React.FormEvent) => {
-        e.preventDefault();
-        if (!editingEmployee) return;
-        if (!validatePercentageSum(editingEmployee.skillAssignments)) {
+    const handleSaveEmployee = useCallback((updatedEmp: Employee) => {
+        if (!updatedEmp) return;
+        if (!validatePercentageSum(updatedEmp.skillAssignments)) {
             alert('Die Prozentsätze der Qualifikationen müssen zusammen 100% ergeben.');
             return;
         }
         setEmployees(prev => {
-            const exists = prev.find(e => e.id === editingEmployee.id);
-            return exists ? prev.map(e => e.id === editingEmployee.id ? editingEmployee : e) : [...prev, editingEmployee];
+            const exists = prev.find(e => e.id === updatedEmp.id);
+            return exists ? prev.map(e => e.id === updatedEmp.id ? updatedEmp : e) : [...prev, updatedEmp];
         });
         setIsModalOpen(false);
         setEditingEmployee(null);
-    }, [editingEmployee]);
+    }, []);
 
     const confirmDeleteAction = useCallback(() => {
         if (deleteTimer > 0) return;
@@ -266,6 +262,46 @@ export const usePlannerDashboard = () => {
         });
     }, [filteredSkillGroups, shadowingRows]);
 
+    const handleAddRow = useCallback((roleName: string) => {
+        setSkillGroups(prev => prev.map(g => {
+            if (g.roles.some(r => r.name === roleName || r.name.startsWith(roleName))) {
+                const baseRole = g.roles.find(r => r.name === roleName) ?? g.roles[0];
+                const uniqueSuffix = generateId().slice(0, 4);
+                return {
+                    ...g,
+                    roles: [...g.roles, { ...baseRole, name: `${roleName} (${uniqueSuffix})` }]
+                };
+            }
+            return g;
+        }));
+    }, []);
+
+    const handleEditRow = useCallback((oldName: string, newName: string) => {
+        setSkillGroups(prev => prev.map(g => ({
+            ...g,
+            roles: g.roles.map(r => r.name === oldName ? { ...r, name: newName } : r)
+        })));
+    }, []);
+
+    const handleReorderRoles = useCallback((fromIdx: number, toIdx: number) => {
+        setSkillGroups(prev => {
+            // Build the same flat mapping that allRolesWithShadowing uses (non-shadowing rows only)
+            const flat: { groupIdx: number; roleIdx: number }[] = [];
+            prev.forEach((g, gi) => g.roles.forEach((_, ri) => flat.push({ groupIdx: gi, roleIdx: ri })));
+
+            if (fromIdx >= flat.length || toIdx >= flat.length || fromIdx === toIdx) return prev;
+
+            const { groupIdx: fromGi, roleIdx: fromRi } = flat[fromIdx];
+            const { groupIdx: toGi, roleIdx: toRi } = flat[toIdx];
+
+            // Deep-copy the affected groups' roles arrays
+            const next = prev.map(g => ({ ...g, roles: [...g.roles] }));
+            const [removed] = next[fromGi].roles.splice(fromRi, 1);
+            next[toGi].roles.splice(toRi, 0, removed);
+            return next;
+        });
+    }, []);
+
     return {
         employees, setEmployees,
         shifts, setShifts,
@@ -284,12 +320,13 @@ export const usePlannerDashboard = () => {
         deleteConf, deleteTimer,
         roleTabFilters, selectedDept, setSelectedDept,
         shadowingRows, allRolesWithShadowing,
+        filteredSkillGroups, // exported so PlannerDashboard doesn't need its own duplicate memo
         activeNotifications, notificationsHistory,
         markAsRead, markAllAsRead,
         handleAiOptimize, addManualShift, deleteShift,
         handleOpenAddModal, handleOpenEditModal, handleSaveEmployee,
         confirmDeleteAction, handleCloseModal, handlePreviousWeek, handleNextWeek,
         handleCloseDeleteConf, handleExport, toggleShadowing, toggleDepartmentFilter,
-        handleDeleteEmployee
+        handleDeleteEmployee, handleAddRow, handleReorderRoles, handleEditRow
     };
 };

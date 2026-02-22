@@ -2,21 +2,27 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Employee, Shift, ShiftTypeID } from "../types";
 
+// Lazy singleton: only instantiated on first AI call, not at module load time.
+// This avoids a crash when process.env.API_KEY is undefined at startup.
+let _ai: GoogleGenAI | null = null;
+const getAi = () => {
+  if (!_ai) _ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  return _ai;
+};
+
 export const autoScheduleShifts = async (
   employees: Employee[],
   startDate: string,
   endDate: string
 ): Promise<Partial<Shift>[]> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  
   const prompt = `
     Erstelle einen Dienstplan für den Zeitraum von ${startDate} bis ${endDate}.
-    Mitarbeiter Profile: ${JSON.stringify(employees.map(e => ({ 
-      id: e.id, 
-      name: e.name, 
-      assignments: e.skillAssignments, 
-      daysPerWeek: e.contractHours 
-    })))}
+    Mitarbeiter Profile: ${JSON.stringify(employees.map(e => ({
+    id: e.id,
+    name: e.name,
+    assignments: e.skillAssignments,
+    daysPerWeek: e.contractHours
+  })))}
     Schicht-Typen: MORNING, LATE, NIGHT, WEEKEND_DAY.
     
     Regeln:
@@ -28,7 +34,7 @@ export const autoScheduleShifts = async (
   `;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await getAi().models.generateContent({
       model: "gemini-3-pro-preview",
       contents: prompt,
       config: {
@@ -40,7 +46,8 @@ export const autoScheduleShifts = async (
             properties: {
               employeeId: { type: Type.STRING },
               date: { type: Type.STRING, description: 'YYYY-MM-DD' },
-              typeId: { type: Type.STRING, description: 'Einer der Schicht-Typen ID' }
+              typeId: { type: Type.STRING, description: 'Einer der Schicht-Typen ID' },
+              roleName: { type: Type.STRING, description: 'Rollenname aus dem Dienstplan' }
             },
             required: ["employeeId", "date", "typeId"]
           }
@@ -49,7 +56,7 @@ export const autoScheduleShifts = async (
     });
 
     if (response.text) {
-      return JSON.parse(response.text);
+      return JSON.parse(response.text) as Partial<Shift>[];
     }
     return [];
   } catch (error) {

@@ -108,11 +108,11 @@ const CurrentSchedule: React.FC = () => {
                                 {weekDays.map((day) => (
                                     <th
                                         key={day.toISOString()}
-                                        className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider"
+                                        className="px-3 py-2.5 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider"
                                     >
                                         <div className="flex flex-col">
                                             <span>{format(day, 'EEE', { locale: de })}</span>
-                                            <span className="text-slate-800 text-sm">{format(day, 'dd.MM')}</span>
+                                            <span className="text-slate-800 text-[13px]">{format(day, 'dd.MM')}</span>
                                         </div>
                                     </th>
                                 ))}
@@ -125,22 +125,22 @@ const CurrentSchedule: React.FC = () => {
                                     return (
                                         <td
                                             key={day.toISOString()}
-                                            className="px-4 py-6 border-b border-r border-slate-100 align-top"
+                                            className="px-3 py-5 border-b border-r border-slate-100 align-top"
                                         >
                                             {shift ? (
                                                 <div className="space-y-2">
-                                                    <div className="bg-purple-50 border border-purple-200 rounded-xl p-3">
-                                                        <div className="font-bold text-[16px] text-slate-900 mb-1 leading-tight">
+                                                    <div className="bg-purple-50 border border-purple-200 rounded-xl p-2.5">
+                                                        <div className="font-bold text-[14.5px] text-slate-900 mb-0.5 leading-tight">
                                                             {shift.role}
                                                         </div>
-                                                        <div className="text-[14px] font-bold text-slate-600 flex items-center gap-1">
-                                                            <Calendar size={14} className="text-[#4B2C82]" />
+                                                        <div className="text-[12.5px] font-bold text-slate-600 flex items-center gap-1">
+                                                            <Calendar size={13} className="text-[#4B2C82]" />
                                                             {shift.time}
                                                         </div>
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div className="text-center text-slate-300 text-xs py-4">Frei</div>
+                                                <div className="text-center text-slate-300 text-[11px] py-3">Frei</div>
                                             )}
                                         </td>
                                     );

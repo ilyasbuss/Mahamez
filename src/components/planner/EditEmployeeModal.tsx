@@ -2,23 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { Users, X, ChevronUp, ChevronDown, CheckCircle2, PieChart as PieChartIcon, Lock, Unlock, Trash2, Mail, Plus, Calendar, Send } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { Employee, SkillGroup, SkillAssignment, Skill, RoleDefinition, Redaktion } from '../../types';
-import { REDAKTIONS_OPTIONEN } from '../../constants';
+import { REDAKTIONS_OPTIONEN, COLORS, VERTRAGS_OPTIONEN } from '../../constants';
 
 interface EditEmployeeModalProps {
     isOpen: boolean;
     employee: Employee | null;
     skillGroups: SkillGroup[];
+    allEmployees: Employee[];
     onClose: () => void;
     onSave: (employee: Employee) => void;
     onDelete: (employee: Employee) => void;
 }
 
-const COLORS = ['#4B2C82', '#6B46C1', '#805AD5', '#9F7AEA', '#B794F4', '#D6BCFA', '#7C3AED', '#5B21B6', '#4C1D95'];
-const VERTRAGS_OPTIONEN = ["Festangestellt (befristet)", "Festangestellt (unbefristet)", "Frei (befristet)", "Frei (unbefristet)"];
 
-const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, employee, skillGroups, onClose, onSave, onDelete }) => {
+const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, employee, skillGroups, allEmployees, onClose, onSave, onDelete }) => {
     const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
     const [isRolesExpanded, setIsRolesExpanded] = useState(true);
+    const [activePoolDropdown, setActivePoolDropdown] = useState<{ type: 'with' | 'without' } | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteTimer, setDeleteTimer] = useState(0);
 
@@ -124,52 +124,55 @@ const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, employee,
                                 <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">System-Rolle</label><select value={editingEmployee.systemRole || 'EMPLOYEE'} onChange={(e) => setEditingEmployee({ ...editingEmployee, systemRole: e.target.value as any })} className="w-full border rounded-xl px-3 py-2 outline-none focus:border-[#4B2C82] bg-slate-50 font-medium text-sm transition-all focus:ring-2 focus:ring-purple-100"><option value="EMPLOYEE">Mitarbeiter</option><option value="PLANNER">Planer (Admin)</option></select></div>
                             </div>
 
-                            <div className="bg-purple-50/30 rounded-2xl p-4 border border-purple-100 space-y-3">
-                                <label className="block text-[10px] font-bold text-[#4B2C82] uppercase tracking-widest">Abwesenheit eintragen</label>
-                                <div className="flex items-center gap-3">
-                                    <div className="flex-1 relative">
-                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4B2C82] pointer-events-none"><Calendar size={14} /></div>
-                                        <input
-                                            type="date"
-                                            className="w-full pl-10 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-[#4B2C82] focus:ring-2 focus:ring-purple-100 transition-all appearance-none cursor-pointer"
-                                            onChange={(e) => {
-                                                const start = e.target.value;
-                                                if (!start) return;
-                                                const currentAbs = editingEmployee.absences || [];
-                                                setEditingEmployee({ ...editingEmployee, absences: [...currentAbs, { id: `${Date.now()}`, start, end: start }] });
-                                            }}
-                                        />
-                                    </div>
-                                    <span className="text-slate-400 font-bold text-xs uppercase">bis</span>
-                                    <div className="flex-1 relative">
-                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4B2C82] pointer-events-none"><Calendar size={14} /></div>
-                                        <input
-                                            type="date"
-                                            className="w-full pl-10 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-[#4B2C82] focus:ring-2 focus:ring-purple-100 transition-all appearance-none cursor-pointer"
-                                            onChange={(e) => {
-                                                const end = e.target.value;
-                                                if (!end) return;
-                                                const currentAbs = editingEmployee.absences || [];
-                                                if (currentAbs.length > 0) {
-                                                    const last = currentAbs[currentAbs.length - 1];
-                                                    const next = [...currentAbs.slice(0, -1), { ...last, end }];
-                                                    setEditingEmployee({ ...editingEmployee, absences: next });
-                                                }
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {(editingEmployee.absences || []).map((abs) => (
-                                        <div key={abs.id} className="flex items-center gap-2 px-3 py-1.5 bg-white border border-purple-100 rounded-xl text-[11px] font-bold text-[#4B2C82] shadow-sm animate-in fade-in slide-in-from-top-1">
-                                            <span>{abs.start} - {abs.end}</span>
-                                            <button type="button" onClick={() => setEditingEmployee({ ...editingEmployee, absences: (editingEmployee.absences || []).filter(a => a.id !== abs.id) })} className="text-slate-300 hover:text-red-500 transition"><X size={12} /></button>
+                            <div className="space-y-2">
+                                <label className="block text-[10px] font-bold text-slate-400 uppercase">Abwesenheit eintragen</label>
+                                <div className="bg-purple-50/30 rounded-2xl p-4 border border-purple-100 space-y-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex-1 relative">
+                                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4B2C82] pointer-events-none"><Calendar size={14} /></div>
+                                            <input
+                                                type="date"
+                                                className="w-full pl-10 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-[#4B2C82] focus:ring-2 focus:ring-purple-100 transition-all appearance-none cursor-pointer"
+                                                onChange={(e) => {
+                                                    const start = e.target.value;
+                                                    if (!start) return;
+                                                    const currentAbs = editingEmployee.absences || [];
+                                                    setEditingEmployee({ ...editingEmployee, absences: [...currentAbs, { id: `${Date.now()}`, start, end: start }] });
+                                                }}
+                                            />
                                         </div>
-                                    ))}
+                                        <span className="text-slate-400 font-bold text-xs uppercase">bis</span>
+                                        <div className="flex-1 relative">
+                                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4B2C82] pointer-events-none"><Calendar size={14} /></div>
+                                            <input
+                                                type="date"
+                                                className="w-full pl-10 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-[#4B2C82] focus:ring-2 focus:ring-purple-100 transition-all appearance-none cursor-pointer"
+                                                onChange={(e) => {
+                                                    const end = e.target.value;
+                                                    if (!end) return;
+                                                    const currentAbs = editingEmployee.absences || [];
+                                                    if (currentAbs.length > 0) {
+                                                        const last = currentAbs[currentAbs.length - 1];
+                                                        const next = [...currentAbs.slice(0, -1), { ...last, end }];
+                                                        setEditingEmployee({ ...editingEmployee, absences: next });
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {(editingEmployee.absences || []).map((abs) => (
+                                            <div key={abs.id} className="flex items-center gap-2 px-3 py-1.5 bg-white border border-purple-100 rounded-xl text-[11px] font-bold text-[#4B2C82] shadow-sm animate-in fade-in slide-in-from-top-1">
+                                                <span>{abs.start} - {abs.end}</span>
+                                                <button type="button" onClick={() => setEditingEmployee({ ...editingEmployee, absences: (editingEmployee.absences || []).filter(a => a.id !== abs.id) })} className="text-slate-300 hover:text-red-500 transition"><X size={12} /></button>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
-                            <div>
-                                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Redaktionszugehörigkeit</label>
+
+                            <div className="space-y-2">
+                                <label className="block text-[10px] font-bold text-slate-400 uppercase">Redaktionszugehörigkeit</label>
                                 <div className="flex flex-wrap gap-2">
                                     {REDAKTIONS_OPTIONEN.map(dept => {
                                         const isSelected = (editingEmployee.editorialMemberships || []).includes(dept);
@@ -190,14 +193,115 @@ const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, employee,
                                     })}
                                 </div>
                             </div>
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Vertrag</label><select required value={editingEmployee.role} onChange={(e) => setEditingEmployee({ ...editingEmployee, role: e.target.value })} className="w-full border rounded-xl px-3 py-2 outline-none focus:border-[#4B2C82] bg-slate-50 font-medium text-sm">{VERTRAGS_OPTIONEN.map(opt => (<option key={opt} value={opt}>{opt}</option>))}</select></div>
                                 <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">{editingEmployee.role.includes("Festangestellt") ? "Teilzeit (%)" : "Tage"}</label><input type="number" step="1" min="0" max="100" required value={editingEmployee.contractHours} onChange={(e) => setEditingEmployee({ ...editingEmployee, contractHours: Number(e.target.value) })} className="w-full border rounded-xl px-3 py-2 outline-none focus:border-[#4B2C82] bg-slate-50 font-medium text-sm" /></div>
                             </div>
+
+                            {editingEmployee.skillAssignments.some(sa => sa.skill.includes('Mod')) && (
+                                <div className="space-y-3 animate-in fade-in slide-in-from-top-4">
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Prod-Pool</label>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {/* Mit: */}
+                                        <div className="space-y-2">
+                                            <span className="text-[10px] font-bold text-slate-500">Mit:</span>
+                                            <div className="min-h-[60px] p-2 bg-slate-50 border rounded-2xl relative">
+                                                <div className="flex flex-wrap gap-2 mb-2">
+                                                    {(editingEmployee.prodPoolWith || []).map(id => {
+                                                        const emp = allEmployees.find(e => e.id === id);
+                                                        if (!emp) return null;
+                                                        return (
+                                                            <div key={id} className="bg-purple-50 border border-purple-100 px-2 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
+                                                                <span className="text-[11px] font-bold text-[#4B2C82]">{emp.name.split(' ').pop()}</span>
+                                                                <button type="button" onClick={() => setEditingEmployee({ ...editingEmployee, prodPoolWith: (editingEmployee.prodPoolWith || []).filter(pid => pid !== id) })} className="text-slate-300 hover:text-red-500 transition"><X size={10} /></button>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setActivePoolDropdown(activePoolDropdown?.type === 'with' ? null : { type: 'with' })}
+                                                    className="w-full py-1.5 border-2 border-dashed border-slate-200 rounded-xl text-[10px] font-bold text-slate-300 hover:border-[#4B2C82]/20 hover:text-[#4B2C82] transition-all flex items-center justify-center gap-2"
+                                                >
+                                                    <Plus size={12} /> Hinzufügen
+                                                </button>
+                                                {activePoolDropdown?.type === 'with' && (
+                                                    <div className="absolute left-0 top-full mt-1 z-[100] w-48 bg-white border border-slate-200 rounded-xl shadow-2xl py-1 max-h-48 overflow-y-auto">
+                                                        {allEmployees
+                                                            .filter(e => e.id !== editingEmployee.id && !(editingEmployee.prodPoolWith || []).includes(e.id))
+                                                            .sort((a, b) => a.name.localeCompare(b.name))
+                                                            .map(e => (
+                                                                <button
+                                                                    key={e.id}
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setEditingEmployee({ ...editingEmployee, prodPoolWith: [...(editingEmployee.prodPoolWith || []), e.id] });
+                                                                        setActivePoolDropdown(null);
+                                                                    }}
+                                                                    className="w-full text-left px-3 py-1.5 hover:bg-purple-50 text-[11px] font-medium text-slate-600 transition-colors"
+                                                                >
+                                                                    {e.name}
+                                                                </button>
+                                                            ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Nicht mit: */}
+                                        <div className="space-y-2">
+                                            <span className="text-[10px] font-bold text-slate-500">Nicht mit:</span>
+                                            <div className="min-h-[60px] p-2 bg-slate-50 border rounded-2xl relative">
+                                                <div className="flex flex-wrap gap-2 mb-2">
+                                                    {(editingEmployee.prodPoolWithout || []).map(id => {
+                                                        const emp = allEmployees.find(e => e.id === id);
+                                                        if (!emp) return null;
+                                                        return (
+                                                            <div key={id} className="bg-slate-100 border border-slate-200 px-2 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
+                                                                <span className="text-[11px] font-bold text-slate-600">{emp.name.split(' ').pop()}</span>
+                                                                <button type="button" onClick={() => setEditingEmployee({ ...editingEmployee, prodPoolWithout: (editingEmployee.prodPoolWithout || []).filter(pid => pid !== id) })} className="text-slate-300 hover:text-red-500 transition"><X size={10} /></button>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setActivePoolDropdown(activePoolDropdown?.type === 'without' ? null : { type: 'without' })}
+                                                    className="w-full py-1.5 border-2 border-dashed border-slate-200 rounded-xl text-[10px] font-bold text-slate-300 hover:border-[#4B2C82]/20 hover:text-[#4B2C82] transition-all flex items-center justify-center gap-2"
+                                                >
+                                                    <Plus size={12} /> Hinzufügen
+                                                </button>
+                                                {activePoolDropdown?.type === 'without' && (
+                                                    <div className="absolute left-0 top-full mt-1 z-[100] w-48 bg-white border border-slate-200 rounded-xl shadow-2xl py-1 max-h-48 overflow-y-auto">
+                                                        {allEmployees
+                                                            .filter(e => e.id !== editingEmployee.id && !(editingEmployee.prodPoolWithout || []).includes(e.id))
+                                                            .sort((a, b) => a.name.localeCompare(b.name))
+                                                            .map(e => (
+                                                                <button
+                                                                    key={e.id}
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setEditingEmployee({ ...editingEmployee, prodPoolWithout: [...(editingEmployee.prodPoolWithout || []), e.id] });
+                                                                        setActivePoolDropdown(null);
+                                                                    }}
+                                                                    className="w-full text-left px-3 py-1.5 hover:bg-purple-50 text-[11px] font-medium text-slate-600 transition-colors"
+                                                                >
+                                                                    {e.name}
+                                                                </button>
+                                                            ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="space-y-3">
                                 <button type="button" onClick={() => setIsRolesExpanded(!isRolesExpanded)} className="w-full flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase py-1"><span>Rollen</span>{isRolesExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}</button>
                                 {isRolesExpanded && (
-                                    <div className="space-y-3 h-[280px] overflow-y-auto pr-2 bg-slate-50/50 p-2.5 rounded-2xl border">
+                                    <div className="space-y-3 h-[200px] overflow-y-auto pr-2 bg-slate-50/50 p-2.5 rounded-2xl border">
                                         {skillGroups.map(g => (
                                             <div key={g.id} className="space-y-1.5"><h4 className="text-[9px] font-bold text-slate-400 uppercase">{g.title}</h4><div className="grid grid-cols-2 gap-2">{g.roles.map(r => { const sel = editingEmployee.skillAssignments.some(sa => sa.skill === r.name); return (<button key={r.name} type="button" onClick={() => toggleSkillAssignment(r)} className={`flex items-center justify-between p-2 rounded-xl border transition text-left ${sel ? 'border-[#4B2C82] bg-purple-50 text-[#4B2C82]' : 'border-slate-100 bg-white text-slate-500'}`}><span className="text-[11px] font-semibold">{r.name}</span>{sel && <CheckCircle2 size={14} />}</button>); })}</div></div>
                                         ))}
@@ -205,32 +309,45 @@ const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, employee,
                                 )}
                             </div>
                         </div>
-                        <div className="bg-slate-50 rounded-2xl p-4 border space-y-4 flex flex-col h-full max-h-[600px]">
-                            <h3 className="text-[11px] font-bold text-slate-800 uppercase flex items-center gap-2"><PieChartIcon size={14} className="text-[#4B2C82]" /> Zeitliche Verteilung</h3>
-                            <div className="h-40 flex items-center justify-center bg-white rounded-2xl border shadow-sm"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={[...editingEmployee.skillAssignments]} dataKey="percentage" nameKey="skill" cx="50%" cy="50%" outerRadius={60} innerRadius={40} paddingAngle={4}>{editingEmployee.skillAssignments.map((_, i) => (<Cell key={`cp-${i}`} fill={COLORS[i % COLORS.length]} />))}</Pie><Tooltip /></PieChart></ResponsiveContainer></div>
-                            <div className="flex-1 space-y-2 overflow-y-auto pr-1">
-                                {editingEmployee.skillAssignments.map((sa, i) => (
-                                    <div key={sa.skill} className="bg-white p-2.5 rounded-xl shadow-sm border space-y-1.5">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <div className="flex items-center gap-2 truncate">
-                                                <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
-                                                <span className="text-[11px] font-bold text-slate-700 truncate">{sa.skill}</span>
+
+                        <div className="flex flex-col h-full max-h-[600px] space-y-3">
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase">Zeitliche Verteilung</label>
+                            <div className="bg-slate-50 rounded-2xl p-4 border space-y-4 flex-1 flex flex-col min-h-0">
+                                <div className="h-40 flex items-center justify-center bg-white rounded-2xl border shadow-sm shrink-0">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie data={[...editingEmployee.skillAssignments]} dataKey="percentage" nameKey="skill" cx="50%" cy="50%" outerRadius={60} innerRadius={40} paddingAngle={4}>
+                                                {editingEmployee.skillAssignments.map((_, i) => (<Cell key={`cp-${i}`} fill={COLORS[i % COLORS.length]} />))}
+                                            </Pie>
+                                            <Tooltip />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                <div className="flex-1 space-y-2 overflow-y-auto pr-1">
+                                    {editingEmployee.skillAssignments.map((sa, i) => (
+                                        <div key={sa.skill} className="bg-white p-2.5 rounded-xl shadow-sm border space-y-1.5">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <div className="flex items-center gap-2 truncate">
+                                                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
+                                                    <span className="text-[11px] font-bold text-slate-700 truncate">{sa.skill}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[11px] font-bold text-[#4B2C82] bg-purple-50 px-1.5 py-0.5 rounded-md min-w-[32px] text-center">
+                                                        {Math.round(sa.percentage)}%
+                                                    </span>
+                                                    <button type="button" onClick={() => updateSkillAssignment(sa.skill, 'locked', !sa.locked)} className={`p-1 rounded transition ${sa.locked ? 'bg-orange-100 text-orange-600' : 'bg-slate-50 text-slate-400'}`}>
+                                                        {sa.locked ? <Lock size={12} /> : <Unlock size={12} />}
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[11px] font-bold text-[#4B2C82] bg-purple-50 px-1.5 py-0.5 rounded-md min-w-[32px] text-center">
-                                                    {Math.round(sa.percentage)}%
-                                                </span>
-                                                <button type="button" onClick={() => updateSkillAssignment(sa.skill, 'locked', !sa.locked)} className={`p-1 rounded transition ${sa.locked ? 'bg-orange-100 text-orange-600' : 'bg-slate-50 text-slate-400'}`}>
-                                                    {sa.locked ? <Lock size={12} /> : <Unlock size={12} />}
-                                                </button>
-                                            </div>
+                                            <input type="range" min="0" max="100" value={Math.round(sa.percentage)} disabled={sa.locked} onChange={(e) => updateSkillAssignment(sa.skill, 'percentage', e.target.value)} className={`w-full h-1 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#4B2C82] ${sa.locked ? 'opacity-30' : ''}`} />
                                         </div>
-                                        <input type="range" min="0" max="100" value={Math.round(sa.percentage)} disabled={sa.locked} onChange={(e) => updateSkillAssignment(sa.skill, 'percentage', e.target.value)} className={`w-full h-1 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#4B2C82] ${sa.locked ? 'opacity-30' : ''}`} />
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>
+
                     <div className="flex gap-2.5 pt-4 mt-4 border-t">
                         <button type="submit" className="flex-1 py-2.5 bg-[#4B2C82] text-white font-bold rounded-2xl hover:bg-[#5B3798]">Speichern</button>
                         <button type="button" onClick={onClose} className="flex-1 py-2.5 border rounded-2xl text-slate-500 font-bold hover:bg-slate-50">Abbrechen</button>
@@ -272,9 +389,9 @@ const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, employee,
                             </div>
                         )}
                     </div>
-                </form>
-            </div>
-        </div>
+                </form >
+            </div >
+        </div >
     );
 };
 

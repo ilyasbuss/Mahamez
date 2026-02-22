@@ -43,6 +43,7 @@ import DeleteConfirmationModal from '../components/planner/DeleteConfirmationMod
 import RoleEditorModal from '../components/planner/RoleEditorModal';
 import GroupEditorModal from '../components/planner/GroupEditorModal';
 import NotificationPopover from '../components/planner/NotificationPopover';
+import WeeklyViewMockups from '../components/planner/WeeklyViewMockups';
 import { usePlannerDashboard } from '../hooks/usePlannerDashboard';
 
 const PlannerDashboard: React.FC = () => {
@@ -70,13 +71,18 @@ const PlannerDashboard: React.FC = () => {
     handleOpenAddModal, handleOpenEditModal, handleSaveEmployee,
     confirmDeleteAction, handleCloseModal, handlePreviousWeek, handleNextWeek,
     handleCloseDeleteConf, handleExport, toggleShadowing, toggleDepartmentFilter,
-    handleDeleteEmployee
+    handleDeleteEmployee, handleAddRow, handleReorderRoles, handleEditRow
   } = usePlannerDashboard();
 
-  const statsData = useMemo(() => employees.map(emp => {
-    const hours = shifts.filter(s => s.employeeId === emp.id && (parseISO(s.date) >= weekDays[0] && parseISO(s.date) <= weekDays[6])).length * HOURS_PER_SHIFT;
-    return { name: emp.name, hours, limit: emp.maxHoursPerWeek, over: hours > emp.maxHoursPerWeek };
-  }), [employees, shifts, weekDays]);
+  const statsData = useMemo(() => {
+    // ISO date strings are lexicographically comparable — no need to call parseISO twice per shift
+    const startStr = format(weekDays[0], 'yyyy-MM-dd');
+    const endStr = format(weekDays[6], 'yyyy-MM-dd');
+    return employees.map(emp => {
+      const hours = shifts.filter(s => s.employeeId === emp.id && s.date >= startStr && s.date <= endStr).length * HOURS_PER_SHIFT;
+      return { name: emp.name, hours, limit: emp.maxHoursPerWeek, over: hours > emp.maxHoursPerWeek };
+    });
+  }, [employees, shifts, weekDays]);
 
   const filteredSkillGroups = useMemo(() => {
     if (selectedDept === 'Moderation') return skillGroups.filter(g => g.id === 'g_moderation');
@@ -208,6 +214,10 @@ const PlannerDashboard: React.FC = () => {
             onToggleShadowing={toggleShadowing}
             onDeleteShift={deleteShift}
             onAddShift={addManualShift}
+            isNewPlanView={activeTab === 'new-plan'}
+            onAddRow={handleAddRow}
+            onReorder={handleReorderRoles}
+            onEditRow={handleEditRow}
           />
         )}
 
@@ -263,19 +273,34 @@ const PlannerDashboard: React.FC = () => {
         {activeTab === 'rules' && <RulesConfig />}
 
         {activeTab === 'stats' && (
-          <div className="bg-white p-4 border rounded-2xl shadow-sm">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-800"><BarChart3 size={18} className="text-[#4B2C82]" /> Auslastung (Stunden)</h3>
-            <div className="h-56 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={statsData}>
-                  <XAxis dataKey="name" fontSize={9} axisLine={false} tickLine={false} />
-                  <YAxis fontSize={9} axisLine={false} tickLine={false} />
-                  <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }} />
-                  <Bar dataKey="hours" radius={[4, 4, 0, 0]}>
-                    {statsData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.over ? '#ef4444' : COLORS[index % COLORS.length]} />)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+          <div className="space-y-6">
+            <div className="bg-white p-4 border rounded-2xl shadow-sm">
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-800"><BarChart3 size={18} className="text-[#4B2C82]" /> Auslastung (Stunden)</h3>
+              <div className="h-56 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={statsData}>
+                    <XAxis dataKey="name" fontSize={9} axisLine={false} tickLine={false} />
+                    <YAxis fontSize={9} axisLine={false} tickLine={false} />
+                    <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }} />
+                    <Bar dataKey="hours" radius={[4, 4, 0, 0]}>
+                      {statsData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.over ? '#ef4444' : COLORS[index % COLORS.length]} />)}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 border rounded-[2rem] shadow-sm">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-purple-50 rounded-xl text-[#4B2C82]">
+                  <LayoutGrid size={20} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-800">Mockups: Wochenansicht Konzepte</h3>
+                  <p className="text-sm text-slate-500 font-medium">Verschiedene Ansätze für eine effiziente Wochenplanung</p>
+                </div>
+              </div>
+              <WeeklyViewMockups />
             </div>
           </div>
         )}
@@ -362,6 +387,7 @@ const PlannerDashboard: React.FC = () => {
         isOpen={isModalOpen && !!editingEmployee}
         employee={editingEmployee}
         skillGroups={skillGroups}
+        allEmployees={employees}
         onClose={handleCloseModal}
         onSave={handleSaveEmployee}
         onDelete={handleDeleteEmployee}

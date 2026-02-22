@@ -21,10 +21,11 @@ export interface Employee {
   maxHoursPerWeek: number;
   contractHours: number; // Interpretation: Teilzeitgrad (0-100) or contract days
   preferredShifts: ShiftTypeID[];
-  unavailability: string[]; // ISO Dates
-  editorialMemberships?: string[];
+  unavailability: { id: string; date: string }[];
   absences?: { id: string; start: string; end: string }[];
-  producerPool?: string[]; // IDs of preferred producers
+  editorialMemberships?: Redaktion[];
+  prodPoolWith?: string[]; // IDs of employees
+  prodPoolWithout?: string[]; // IDs of employees
 }
 
 // Availability types for employees
@@ -53,6 +54,7 @@ export interface Shift {
   date: string; // YYYY-MM-DD
   typeId: ShiftTypeID;
   roleName: string; // The specific function from the roster
+  customName?: string;
 }
 
 export interface PlanningState {

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import InactivityModal from '../components/InactivityModal';
 
 interface User {
@@ -58,6 +58,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setShowInactivityModal(false);
     };
 
+    // Keep a ref so the stable resetTimers callback always reads the latest value
+    // without needing to re-register event listeners on every state change (stale-closure fix).
+    const showModalRef = useRef(showInactivityModal);
+    useEffect(() => { showModalRef.current = showInactivityModal; }, [showInactivityModal]);
+
     // Inactivity Timer logic (10 min warning, 12 min logout)
     useEffect(() => {
         if (!isAuthenticated) return;
@@ -69,7 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             window.clearTimeout(warningTimer);
             window.clearTimeout(logoutTimer);
 
-            if (!showInactivityModal) {
+            if (!showModalRef.current) {
                 // 10 minutes warning
                 warningTimer = window.setTimeout(() => {
                     setShowInactivityModal(true);
@@ -91,7 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             window.clearTimeout(logoutTimer);
             events.forEach(event => window.removeEventListener(event, resetTimers));
         };
-    }, [isAuthenticated, logout, showInactivityModal]);
+    }, [isAuthenticated, logout]); // removed showInactivityModal dep – handled via ref
 
     return (
         <AuthContext.Provider value={{ user, accessToken, login, logout, isAuthenticated }}>
