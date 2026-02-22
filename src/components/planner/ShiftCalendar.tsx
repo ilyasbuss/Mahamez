@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { format, isSameDay } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { Clock, X, Plus, GripVertical, Settings2 } from 'lucide-react';
+import { Clock, X, Plus, GripVertical, Edit2 } from 'lucide-react';
 import { Employee, Shift, RoleDefinition } from '../../types';
 
 interface ShiftCalendarProps {
@@ -115,29 +115,32 @@ const ShiftCalendar: React.FC<ShiftCalendarProps> = ({
                             `}
                         >
                             <td className="py-0.5 px-3 border-r sticky left-0 bg-slate-100 z-10 shadow-sm relative whitespace-nowrap min-w-max">
-                                <div className="flex items-center gap-2">
-                                    {isNewPlanView && (
-                                        <div className="text-slate-300 group-hover/row:text-slate-400 p-0.5 cursor-grab active:cursor-grabbing hover:bg-slate-200 rounded transition-colors shrink-0">
-                                            <GripVertical size={14} />
-                                        </div>
-                                    )}
-                                    <div className="flex flex-col min-w-max pr-16">
-                                        {r.isShadowing ? (
-                                            <div className="pl-4 font-bold text-slate-600 text-[10px] leading-tight italic">
-                                                Mitlaufen<br />{r.name.replace('Mitlaufen ', '')}
+                                <div className="flex flex-row items-center gap-4 w-min pr-1">
+                                    <div className="flex items-center gap-2">
+                                        {isNewPlanView && (
+                                            <div className="text-slate-300 group-hover/row:text-slate-400 p-0.5 cursor-grab active:cursor-grabbing hover:bg-slate-200 rounded transition-colors shrink-0">
+                                                <GripVertical size={14} />
                                             </div>
-                                        ) : (
-                                            <>
-                                                <div className="font-bold text-slate-900 text-[11.7px] uppercase tracking-tight leading-[1] mb-[-1px]">{r.name}</div>
-                                                <div className="text-[10px] font-bold text-slate-500 flex items-center gap-1">
-                                                    <Clock size={10} /> {r.startTime} - {r.endTime}
-                                                </div>
-                                            </>
                                         )}
+                                        <div className="flex flex-col min-w-max">
+                                            {r.isShadowing ? (
+                                                <div className="pl-4 font-bold text-slate-600 text-[10px] leading-tight italic whitespace-nowrap">
+                                                    Mitlaufen<br />{r.name.replace('Mitlaufen ', '')}
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div className="font-bold text-slate-900 text-[11.7px] uppercase tracking-tight leading-[1] mb-[-1px] whitespace-nowrap">{r.name}</div>
+                                                    <div className="text-[10px] font-bold text-slate-500 flex items-center gap-1 whitespace-nowrap">
+                                                        <Clock size={10} /> {r.startTime} - {r.endTime}
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
                                     {!r.isShadowing && (
-                                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 pl-2 bg-slate-100/80 backdrop-blur-[2px]">
-                                            {(r.groupId === 'g_sonstige' || r.originalRoleName.includes('Sonstige Dienste')) && (
+                                        <div className="flex items-center gap-1.5 shrink-0 ml-auto justify-end">
+                                            <button onClick={() => onToggleShadowing(r.name)} className={`w-4 h-4 rounded-full border text-[8px] font-bold transition shadow-sm flex items-center justify-center shrink-0 ${shadowingRows.has(r.name) ? 'bg-[#4B2C82] border-[#4B2C82] text-white' : 'border-slate-300 text-slate-400 bg-white'}`}>M</button>
+                                            {(r.groupId === 'g_sonstige' || r.originalRoleName.includes('Sonstige Dienste')) && r.name !== 'Qualitätsmanagement' && (
                                                 <button
                                                     onClick={() => {
                                                         const newName = prompt('Dienstname anpassen:', r.name);
@@ -145,13 +148,12 @@ const ShiftCalendar: React.FC<ShiftCalendarProps> = ({
                                                             onEditRow(r.name, newName);
                                                         }
                                                     }}
-                                                    className="w-4 h-4 rounded-full border border-slate-300 text-slate-400 bg-white hover:text-[#4B2C82] hover:border-[#4B2C82] flex items-center justify-center transition-all shadow-sm"
+                                                    className="w-4 h-4 rounded-full border border-slate-300 text-slate-400 bg-white hover:text-[#4B2C82] hover:border-[#4B2C82] flex items-center justify-center transition-all shadow-sm shrink-0"
                                                     title="Dienst für diese Ausgabe anpassen"
                                                 >
-                                                    <Settings2 size={10} />
+                                                    <Edit2 size={10} />
                                                 </button>
                                             )}
-                                            <button onClick={() => onToggleShadowing(r.name)} className={`w-4 h-4 rounded-full border text-[8px] font-bold transition shadow-sm flex items-center justify-center ${shadowingRows.has(r.name) ? 'bg-[#4B2C82] border-[#4B2C82] text-white' : 'border-slate-300 text-slate-400 bg-white'}`}>M</button>
                                         </div>
                                     )}
                                 </div>
