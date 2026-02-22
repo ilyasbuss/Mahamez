@@ -212,7 +212,7 @@ const WeeklyViewMockups: React.FC = () => {
                             <table className="w-full border-collapse text-xs text-left">
                                 <thead>
                                     <tr className="bg-slate-50">
-                                        <th className="p-2 border-b border-r sticky left-0 bg-slate-50 z-20 min-w-[200px] font-bold text-slate-600 text-[10px] uppercase tracking-widest">Funktion</th>
+                                        <th className="p-2 border-b border-r sticky left-0 bg-slate-50 z-20 w-[1%] whitespace-nowrap font-bold text-slate-600 text-[10px] uppercase tracking-widest">Funktion</th>
                                         {WEEK_DAYS.map((day, i) => (
                                             <th key={day} className={`p-2 border-b border-r min-w-[100px] text-center ${[5, 6].includes(i) ? 'bg-purple-50/20' : ''}`}>
                                                 <div className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{day === 'Mo' ? 'Montag' : day === 'Di' ? 'Dienstag' : day === 'Mi' ? 'Mittwoch' : day === 'Do' ? 'Donnerstag' : day === 'Fr' ? 'Freitag' : day === 'Sa' ? 'Samstag' : 'Sonntag'}</div>
@@ -228,7 +228,7 @@ const WeeklyViewMockups: React.FC = () => {
                                         { normal: 'MOVE', weekend: 'EASY', time: '16:00 - 20:00' }
                                     ].map((row) => (
                                         <tr key={row.normal} className="hover:bg-slate-50/50 transition">
-                                            <td className="py-2 px-3 border-r sticky left-0 bg-slate-50 z-10 shadow-sm min-w-[200px]">
+                                            <td className="py-2 px-3 border-r sticky left-0 bg-slate-50 z-10 shadow-sm w-[1%] whitespace-nowrap">
                                                 <div className="flex flex-col">
                                                     <div className="font-black text-slate-900 text-[12px] uppercase tracking-tight leading-none mb-1">
                                                         <span className="opacity-40 group-hover:opacity-100 transition-opacity mr-1">●</span>

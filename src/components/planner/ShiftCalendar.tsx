@@ -58,7 +58,7 @@ const ShiftCalendar: React.FC<ShiftCalendarProps> = ({
             <table className="w-full border-collapse text-xs text-left text-slate-800">
                 <thead>
                     <tr className="bg-slate-50">
-                        <th className="p-2 border-b border-r sticky left-0 bg-slate-50 z-20 font-bold text-slate-600 text-[12px] uppercase tracking-widest whitespace-nowrap">Funktion</th>
+                        <th className="p-2 border-b border-r sticky left-0 bg-slate-50 z-20 font-bold text-slate-600 text-[12px] uppercase tracking-widest whitespace-nowrap w-[1%]">Funktion</th>
                         {weekDays.map(day => {
                             const isToday = isSameDay(day, new Date());
                             return (
@@ -114,8 +114,8 @@ const ShiftCalendar: React.FC<ShiftCalendarProps> = ({
                                 ${dragOverIndex === i && dragDirection === 'down' ? 'border-b-4 border-b-[#4B2C82]' : ''}
                             `}
                         >
-                            <td className="py-0.5 px-3 border-r sticky left-0 bg-slate-100 z-10 shadow-sm relative whitespace-nowrap min-w-max">
-                                <div className="flex flex-row items-center gap-4 w-min pr-1">
+                            <td className="py-0.5 px-3 border-r sticky left-0 bg-slate-100 z-10 shadow-sm relative whitespace-nowrap w-[1%]">
+                                <div className="flex flex-row items-center justify-between w-full h-full gap-3">
                                     <div className="flex items-center gap-2">
                                         {isNewPlanView && (
                                             <div className="text-slate-300 group-hover/row:text-slate-400 p-0.5 cursor-grab active:cursor-grabbing hover:bg-slate-200 rounded transition-colors shrink-0">
@@ -138,7 +138,7 @@ const ShiftCalendar: React.FC<ShiftCalendarProps> = ({
                                         </div>
                                     </div>
                                     {!r.isShadowing && (
-                                        <div className="flex items-center gap-1.5 shrink-0 ml-auto justify-end">
+                                        <div className="flex items-center gap-1.5 shrink-0 ml-auto">
                                             <button onClick={() => onToggleShadowing(r.name)} className={`w-4 h-4 rounded-full border text-[8px] font-bold transition shadow-sm flex items-center justify-center shrink-0 ${shadowingRows.has(r.name) ? 'bg-[#4B2C82] border-[#4B2C82] text-white' : 'border-slate-300 text-slate-400 bg-white'}`}>M</button>
                                             {(r.groupId === 'g_sonstige' || r.originalRoleName.includes('Sonstige Dienste')) && r.name !== 'Qualitätsmanagement' && (
                                                 <button
