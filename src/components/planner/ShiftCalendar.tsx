@@ -3,6 +3,7 @@ import { format, isSameDay } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { Clock, X, Plus, GripVertical, Edit2, Search } from 'lucide-react';
 import { Employee, Shift, RoleDefinition } from '../../types';
+import { formatEmployeeName } from '../../utils/dashboardUtils';
 
 interface ShiftCalendarProps {
     weekDays: Date[];
@@ -44,6 +45,10 @@ const ShiftCalendar: React.FC<ShiftCalendarProps> = ({
     // Drag and drop states
     const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
     const [dragDirection, setDragDirection] = useState<'up' | 'down' | null>(null);
+
+    // Edit Row modal states
+    const [editingRowName, setEditingRowName] = useState<string | null>(null);
+    const [editRowInput, setEditRowInput] = useState("");
 
     // Close dropdown on outside click and reset search
     React.useEffect(() => {
@@ -171,10 +176,8 @@ const ShiftCalendar: React.FC<ShiftCalendarProps> = ({
                                             {(r.groupId === 'g_sonstige' || r.originalRoleName.includes('Sonstige Dienste')) && r.name !== 'Qualitätsmanagement' && (
                                                 <button
                                                     onClick={() => {
-                                                        const newName = prompt('Dienstname anpassen:', r.name);
-                                                        if (newName && onEditRow) {
-                                                            onEditRow(r.name, newName);
-                                                        }
+                                                        setEditingRowName(r.name);
+                                                        setEditRowInput(r.name);
                                                     }}
                                                     className="w-4 h-4 rounded-full border border-slate-300 text-slate-400 bg-white hover:text-[#4B2C82] hover:border-[#4B2C82] flex items-center justify-center transition-all shadow-sm shrink-0"
                                                     title="Dienst für diese Ausgabe anpassen"
@@ -250,7 +253,9 @@ const ShiftCalendar: React.FC<ShiftCalendarProps> = ({
                                                 className={`h-8 border rounded-xl flex items-center justify-center relative transition shadow-sm cursor-move ${shift.id.startsWith('new-') ? 'animate-in fade-in slide-in-from-left-2' : ''} ${employees.find(e => e.id === shift.employeeId)?.role.includes('Fest') ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-100'}`}
                                             >
                                                 <span className="font-bold text-[11px] text-slate-700 select-none">
-                                                    {employees.find(e => e.id === shift.employeeId)?.name || shift.customName || '--'}
+                                                    {employees.find(e => e.id === shift.employeeId)
+                                                        ? formatEmployeeName(employees.find(e => e.id === shift.employeeId)!.name, employees)
+                                                        : (shift.customName || '--')}
                                                 </span>
                                                 <button
                                                     onClick={() => onDeleteShift(shift.id)}
@@ -307,20 +312,6 @@ const ShiftCalendar: React.FC<ShiftCalendarProps> = ({
                                                     <div className="flex items-center justify-between mb-2">
                                                         <div className="flex items-center gap-2">
                                                             <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Person einteilen</h3>
-                                                            <button
-                                                                onClick={() => {
-                                                                    const name = prompt("Manueller Name:");
-                                                                    if (name) {
-                                                                        onAddShift("", dateStr, r.name, name);
-                                                                        setActiveDropdown(null);
-                                                                        setSearchQuery("");
-                                                                    }
-                                                                }}
-                                                                className="p-1 text-slate-400 hover:text-[#4B2C82] hover:bg-slate-50 rounded-lg transition-colors"
-                                                                title="Manuell eingeben"
-                                                            >
-                                                                <Edit2 size={12} />
-                                                            </button>
                                                         </div>
                                                         <button onClick={() => { setActiveDropdown(null); setSearchQuery(""); }} className="p-1 hover:bg-slate-100 rounded-lg text-slate-400"><X size={12} /></button>
                                                     </div>
@@ -342,10 +333,9 @@ const ShiftCalendar: React.FC<ShiftCalendarProps> = ({
                                                     <div className="space-y-1 max-h-[220px] overflow-y-auto pr-1">
                                                         {displayList.map((item, idx) => {
                                                             if (item.type === 'separator') {
-                                                                return <div key={`sep-${idx}`} className="my-2 border-t-2 border-slate-200" />;
+                                                                return <div key={`sep-${idx}`} className="my-2 border-t border-slate-100" />;
                                                             }
                                                             const emp = item.emp;
-                                                            const isQualified = item.isQualified;
                                                             return (
                                                                 <button
                                                                     key={emp.id}
@@ -357,7 +347,8 @@ const ShiftCalendar: React.FC<ShiftCalendarProps> = ({
                                                                     className="w-full text-left px-3 py-2 rounded-xl text-xs hover:bg-slate-50 flex items-center justify-between group/emp border border-transparent hover:border-slate-100 transition-all"
                                                                 >
                                                                     <div className="flex flex-col">
-                                                                        <span className={`${isQualified ? 'font-bold' : 'font-medium'} text-slate-700`}>{emp.name}</span>
+                                                                        <span className="font-bold text-slate-700">{formatEmployeeName(emp.name, employees)}</span>
+                                                                        <span className="text-[8px] text-slate-400 font-bold uppercase">{emp.role}</span>
                                                                     </div>
                                                                     <Plus size={12} className="text-slate-300 group-hover/emp:text-[#4B2C82]" />
                                                                 </button>
@@ -366,6 +357,35 @@ const ShiftCalendar: React.FC<ShiftCalendarProps> = ({
                                                         {displayList.length === 0 && (
                                                             <div className="py-4 text-center text-slate-400 text-[10px] italic">Keine Ergebnisse</div>
                                                         )}
+                                                    </div>
+                                                    <div className="mt-2 pt-2 border-t border-slate-100 flex gap-2">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Manueller Name..."
+                                                            value={customNameInput}
+                                                            onChange={e => setCustomNameInput(e.target.value)}
+                                                            className="flex-1 text-xs px-2 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-[#4B2C82] focus:ring-1 focus:ring-[#4B2C82]"
+                                                            onKeyDown={e => {
+                                                                if (e.key === 'Enter' && customNameInput.trim()) {
+                                                                    onAddShift('custom', dateStr, r.name, customNameInput.trim());
+                                                                    setActiveDropdown(null);
+                                                                    setCustomNameInput("");
+                                                                }
+                                                            }}
+                                                        />
+                                                        <button
+                                                            onClick={() => {
+                                                                if (customNameInput.trim()) {
+                                                                    onAddShift('custom', dateStr, r.name, customNameInput.trim());
+                                                                    setActiveDropdown(null);
+                                                                    setCustomNameInput("");
+                                                                }
+                                                            }}
+                                                            disabled={!customNameInput.trim()}
+                                                            className="p-1.5 bg-[#4B2C82] text-white rounded-lg hover:bg-[#3d2369] disabled:opacity-50 transition-colors"
+                                                        >
+                                                            <Plus size={14} />
+                                                        </button>
                                                     </div>
                                                 </div>
                                             );
@@ -386,6 +406,68 @@ const ShiftCalendar: React.FC<ShiftCalendarProps> = ({
                     >
                         <Plus size={14} />
                     </button>
+                </div>
+            )}
+
+            {/* Edit Row Name Modal */}
+            {editingRowName && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl relative animate-in zoom-in-95 duration-200">
+                        <button
+                            onClick={() => setEditingRowName(null)}
+                            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+                        >
+                            <X size={18} />
+                        </button>
+
+                        <div className="mb-6">
+                            <h3 className="text-xl font-black text-slate-800 tracking-tight">Dienstname anpassen</h3>
+                            <p className="text-sm text-slate-500 mt-1">Ändern Sie den Namen für diesen speziellen Dienst.</p>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Neuer Name</label>
+                                <input
+                                    type="text"
+                                    value={editRowInput}
+                                    onChange={(e) => setEditRowInput(e.target.value)}
+                                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#4B2C82] focus:ring-1 focus:ring-[#4B2C82] outline-none transition-all text-sm font-bold text-slate-800"
+                                    placeholder="z.B. Frühschicht Extra"
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && editRowInput.trim()) {
+                                            if (onEditRow) onEditRow(editingRowName, editRowInput.trim());
+                                            setEditingRowName(null);
+                                        } else if (e.key === 'Escape') {
+                                            setEditingRowName(null);
+                                        }
+                                    }}
+                                />
+                            </div>
+
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setEditingRowName(null)}
+                                    className="flex-1 px-4 py-2.5 rounded-xl font-bold text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+                                >
+                                    Abbrechen
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        if (editRowInput.trim() && onEditRow) {
+                                            onEditRow(editingRowName, editRowInput.trim());
+                                        }
+                                        setEditingRowName(null);
+                                    }}
+                                    disabled={!editRowInput.trim()}
+                                    className="flex-1 px-4 py-2.5 rounded-xl font-bold text-sm text-white bg-[#4B2C82] hover:bg-[#3d2369] transition-colors disabled:opacity-50"
+                                >
+                                    Speichern
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

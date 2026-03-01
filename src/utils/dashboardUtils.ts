@@ -1,4 +1,4 @@
-import { SkillAssignment } from '../types';
+import { SkillAssignment, Employee } from '../types';
 
 export const generateId = (): string => {
     return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
@@ -18,4 +18,24 @@ export const getPriorityColor = (prio: number) => {
         case 4: return '#94a3b8';
         default: return '#cbd5e1';
     }
+};
+
+export const formatEmployeeName = (name: string, allEmployees: Pick<Employee, 'name'>[]): string => {
+    const parts = name.trim().split(' ');
+    if (parts.length < 2) return name;
+
+    const lastName = parts[parts.length - 1];
+    const hasDuplicateLastName = allEmployees.some(emp => {
+        if (emp.name === name) return false;
+        const empParts = emp.name.trim().split(' ');
+        if (empParts.length < 2) return false;
+        return empParts[empParts.length - 1] === lastName;
+    });
+
+    if (hasDuplicateLastName) {
+        const firstInitial = parts[0].charAt(0);
+        return `${firstInitial}. ${lastName}`;
+    }
+
+    return name;
 };
