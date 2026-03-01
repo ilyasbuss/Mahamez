@@ -31,7 +31,7 @@ const STORAGE_KEY_PUBLISHED = 'mahamez_published_shifts';
 
 export const usePlannerDashboard = () => {
     const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
-    
+
     // Load shifts from localStorage
     const [shifts, setShifts] = useState<Shift[]>(() => {
         const saved = localStorage.getItem(STORAGE_KEY_SHIFTS);
@@ -83,32 +83,32 @@ export const usePlannerDashboard = () => {
     // Sync shifts to localStorage
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY_SHIFTS, JSON.stringify(shifts));
-        
+
         // Check if current week's shifts differ from published shifts
         const startStr = format(weekDays[0], 'yyyy-MM-dd');
         const endStr = format(weekDays[6], 'yyyy-MM-dd');
-        
+
         const currentWeekShifts = shifts.filter(s => s.date >= startStr && s.date <= endStr);
         const currentWeekPublished = publishedShifts.filter(s => s.date >= startStr && s.date <= endStr);
-        
+
         // Simple comparison: check if lengths match and all shifts are identical
-        const isDifferent = currentWeekShifts.length !== currentWeekPublished.length || 
+        const isDifferent = currentWeekShifts.length !== currentWeekPublished.length ||
             currentWeekShifts.some(s => {
                 const pub = currentWeekPublished.find(p => p.id === s.id);
                 return !pub || pub.employeeId !== s.employeeId || pub.date !== s.date || pub.roleName !== s.roleName;
             });
-            
+
         setHasUnpublishedChanges(isDifferent);
     }, [shifts, publishedShifts, weekDays]);
 
     const handlePublish = useCallback(() => {
         const startStr = format(weekDays[0], 'yyyy-MM-dd');
         const endStr = format(weekDays[6], 'yyyy-MM-dd');
-        
+
         // Replace published shifts for this week with current shifts
         const otherWeeksPublished = publishedShifts.filter(s => s.date < startStr || s.date > endStr);
         const currentWeekShifts = shifts.filter(s => s.date >= startStr && s.date <= endStr);
-        
+
         const newPublished = [...otherWeeksPublished, ...currentWeekShifts];
         setPublishedShifts(newPublished);
         localStorage.setItem(STORAGE_KEY_PUBLISHED, JSON.stringify(newPublished));
@@ -118,7 +118,7 @@ export const usePlannerDashboard = () => {
     useEffect(() => {
         if (deleteConf.isOpen) {
             const skipTimer = activeTab === 'new-plan' && deleteConf.type === 'shift';
-            setDeleteTimer(skipTimer ? 0 : 3);
+            setDeleteTimer(skipTimer ? 0 : 1);
             if (timerRef.current) clearInterval(timerRef.current);
             if (!skipTimer) {
                 timerRef.current = window.setInterval(() => {
@@ -310,12 +310,12 @@ export const usePlannerDashboard = () => {
         if (selectedDept === 'Moderation') {
             filtered = skillGroups.filter(g => g.id === 'g_moderation');
         } else if (selectedDept === 'Onlineredaktion') {
-            filtered = skillGroups.filter(g => 
-                g.departments.includes('Online-Redaktion') || 
+            filtered = skillGroups.filter(g =>
+                g.departments.includes('Online-Redaktion') ||
                 g.roles.some(r => r.departments?.includes('Online-Redaktion'))
             );
         } else {
-            filtered = skillGroups.filter(g => 
+            filtered = skillGroups.filter(g =>
                 (g.departments.includes('Radio-Redaktion') && g.id !== 'g_moderation') ||
                 g.roles.some(r => r.departments?.includes('Radio-Redaktion'))
             );
@@ -334,13 +334,13 @@ export const usePlannerDashboard = () => {
 
     const rolesTabSkillGroups = useMemo(() => {
         if (roleTabFilters.length === 0) return skillGroups;
-        
+
         return skillGroups.map(g => {
             const matchesGroup = g.departments.some(d => roleTabFilters.includes(d));
-            const filteredRoles = g.roles.filter(r => 
+            const filteredRoles = g.roles.filter(r =>
                 r.departments?.some(d => roleTabFilters.includes(d)) || matchesGroup
             );
-            
+
             if (filteredRoles.length > 0 || matchesGroup) {
                 return { ...g, roles: filteredRoles };
             }
