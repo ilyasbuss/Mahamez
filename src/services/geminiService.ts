@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { Employee, Shift, ShiftTypeID } from "@/src/types";
+import { Employee, Shift, ShiftTypeID } from "../types";
 
 // Lazy singleton: only instantiated on first AI call, not at module load time.
 // This avoids a crash when process.env.API_KEY is undefined at startup.
@@ -35,7 +35,7 @@ export const autoScheduleShifts = async (
 
   try {
     const response = await getAi().models.generateContent({
-      model: "gemini-3-pro-preview",
+      model: "gemini-2.0-flash-exp",
       contents: prompt,
       config: {
         responseMimeType: "application/json",

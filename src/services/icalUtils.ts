@@ -39,9 +39,8 @@ export const generateICalContent = (events: ICalEvent[]): string => {
 export const downloadICalFile = (filename: string, content: string) => {
     const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
     const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
+    link.href = URL.createObjectURL(blob);
     link.setAttribute('download', filename);
-    document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
 };

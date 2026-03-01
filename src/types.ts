@@ -29,12 +29,13 @@ export interface Employee {
 }
 
 // Availability types for employees
-export type AvailabilityStatus = 'available' | 'unavailable_full' | 'unavailable_from' | 'unavailable_until';
+export type AvailabilityStatus = 'available' | 'unavailable_full' | 'unavailable_from' | 'unavailable_until' | 'vacation';
 
 export interface PartialAvailability {
   date: string; // YYYY-MM-DD
   status: AvailabilityStatus;
   time?: string; // HH:MM format, only for unavailable_from or unavailable_until
+  comment?: string;
 }
 
 export type ShiftTypeID = 'MORNING' | 'LATE' | 'NIGHT' | 'WEEKEND_DAY';

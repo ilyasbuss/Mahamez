@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import {
   format,
-  parseISO,
   getISOWeek
 } from 'date-fns';
 import {
@@ -30,7 +29,7 @@ import {
 import MahamezLogo from '../components/MahamezLogo';
 import MyShifts from '../components/employee/MyShifts';
 import AvailabilityCalendar from '../components/employee/AvailabilityCalendar';
-import { PartialAvailability } from '../types';
+import { PartialAvailability, Redaktion, SkillGroup } from '../types';
 import {
   BarChart,
   Bar,
@@ -41,8 +40,7 @@ import {
   Cell
 } from 'recharts';
 
-import { Redaktion, SkillGroup } from '../types';
-import { COLORS, REDAKTIONS_OPTIONEN, HOURS_PER_SHIFT } from '../constants';
+import { COLORS, HOURS_PER_SHIFT } from '../constants';
 import EditEmployeeModal from '../components/planner/EditEmployeeModal';
 import ShiftCalendar from '../components/planner/ShiftCalendar';
 import EmployeeList from '../components/planner/EmployeeList';
@@ -157,9 +155,9 @@ const PlannerDashboard: React.FC = () => {
                 activeTab === 'new-plan' ? 'Neuer Dienstplan' :
                   activeTab === 'employees' ? 'Personalverwaltung' :
                     activeTab === 'roles' ? 'Rollenverwaltung' :
-                      activeTab === 'rules' ? 'Dienstplanregeln' : 
-                    activeTab === 'my-shifts' ? 'Meine Schichten' :
-                      activeTab === 'my-availability' ? 'Meine Verfügbarkeiten' : 'Auslastung & Analyse'}
+                      activeTab === 'rules' ? 'Dienstplanregeln' :
+                        activeTab === 'my-shifts' ? 'Meine Schichten' :
+                          activeTab === 'my-availability' ? 'Meine Verfügbarkeiten' : 'Auslastung & Analyse'}
             </h1>
             {(activeTab === 'calendar' || activeTab === 'new-plan') && (
               <div className="flex items-center bg-white border rounded-xl px-1 py-0.5 shadow-sm">
@@ -173,14 +171,13 @@ const PlannerDashboard: React.FC = () => {
           {(activeTab === 'calendar' || activeTab === 'new-plan' || activeTab === 'rules') && (
             <div className="flex justify-center flex-1 order-3 md:order-none w-full md:w-auto gap-3">
               {activeTab === 'calendar' && (
-                <button 
-                  onClick={handlePublish} 
-                  disabled={!hasUnpublishedChanges} 
-                  className={`px-8 h-9 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2 ${
-                    hasUnpublishedChanges 
-                      ? 'bg-[#4B2C82] hover:bg-[#5B3798] text-white' 
-                      : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
-                  }`}
+                <button
+                  onClick={handlePublish}
+                  disabled={!hasUnpublishedChanges}
+                  className={`px-8 h-9 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2 ${hasUnpublishedChanges
+                    ? 'bg-[#4B2C82] hover:bg-[#5B3798] text-white'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+                    }`}
                 >
                   <Send size={16} className={hasUnpublishedChanges ? 'text-[#9F7AEA]' : 'text-slate-300'} />
                   <span>Veröffentlichen</span>
@@ -317,43 +314,43 @@ const PlannerDashboard: React.FC = () => {
                       <button onClick={() => setEditingGroup(group)} className="p-2 text-slate-300 hover:text-[#4B2C82] transition rounded-xl hover:bg-white border border-transparent hover:border-slate-100 shadow-sm"><Edit2 size={14} /></button>
                     </div>
                   </div>
-                    <div className="p-4 space-y-3 flex-1">
-                      {group.roles.map((role, rIdx) => (
-                        <div
-                          key={role.name}
-                          draggable
-                          onDragStart={() => setDraggedRole({ groupId: group.id, index: rIdx })}
-                          onDragOver={(e) => {
-                            e.preventDefault();
-                            setDragOverRole({ groupId: group.id, index: rIdx });
-                          }}
-                          onDragEnd={() => {
-                            if (draggedRole && dragOverRole && draggedRole.groupId === dragOverRole.groupId) {
-                              handleReorderRoleInGroup(draggedRole.groupId, draggedRole.index, dragOverRole.index);
-                            }
-                            setDraggedRole(null);
-                            setDragOverRole(null);
-                          }}
-                          className={`flex flex-col gap-1 py-3 px-4 rounded-2xl border border-slate-100 bg-slate-50/30 hover:bg-purple-50/50 hover:border-purple-100 transition-all relative group/item
+                  <div className="p-4 space-y-3 flex-1">
+                    {group.roles.map((role, rIdx) => (
+                      <div
+                        key={role.name}
+                        draggable
+                        onDragStart={() => setDraggedRole({ groupId: group.id, index: rIdx })}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setDragOverRole({ groupId: group.id, index: rIdx });
+                        }}
+                        onDragEnd={() => {
+                          if (draggedRole && dragOverRole && draggedRole.groupId === dragOverRole.groupId) {
+                            handleReorderRoleInGroup(draggedRole.groupId, draggedRole.index, dragOverRole.index);
+                          }
+                          setDraggedRole(null);
+                          setDragOverRole(null);
+                        }}
+                        className={`flex flex-col gap-1 py-3 px-4 rounded-2xl border border-slate-100 bg-slate-50/30 hover:bg-purple-50/50 hover:border-purple-100 transition-all relative group/item
                             ${draggedRole?.groupId === group.id && draggedRole?.index === rIdx ? 'opacity-30' : ''}
                             ${dragOverRole?.groupId === group.id && dragOverRole?.index === rIdx ? 'border-t-2 border-t-[#4B2C82]' : ''}
                           `}
-                        >
-                          <div className="flex items-center gap-2">
-                            <div className="text-slate-300 cursor-grab active:cursor-grabbing hover:text-[#4B2C82] transition-colors">
-                              <GripVertical size={14} />
-                            </div>
-                            <span className="font-bold text-slate-900 text-[13px] uppercase tracking-tight leading-none pr-8">{role.name}</span>
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="text-slate-300 cursor-grab active:cursor-grabbing hover:text-[#4B2C82] transition-colors">
+                            <GripVertical size={14} />
                           </div>
-                          <div className="flex items-center gap-3 pl-6">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter flex items-center gap-1"><Clock size={12} className="text-slate-300" /> {role.startTime} - {role.endTime}</span>
-                            <div className="bg-white border border-slate-100 px-1.5 py-0.5 rounded-lg text-[9px] font-bold text-slate-400 uppercase tracking-widest shadow-sm">Prio {role.defaultPriority}</div>
-                          </div>
-                          <button onClick={() => setEditingRole({ role, groupId: group.id })} className="absolute top-3 right-3 opacity-0 group-hover/item:opacity-100 transition-opacity p-1.5 text-slate-300 hover:text-[#4B2C82] bg-white rounded-lg border border-slate-100 shadow-sm"><Edit2 size={14} /></button>
+                          <span className="font-bold text-slate-900 text-[13px] uppercase tracking-tight leading-none pr-8">{role.name}</span>
                         </div>
-                      ))}
-                      <button onClick={() => setEditingRole({ role: { name: '', startTime: '08:00', endTime: '17:00', defaultPercentage: 100, defaultPriority: 2 }, groupId: group.id, isNew: true })} className="w-full py-3 border-2 border-dashed border-slate-100 rounded-2xl text-[10px] font-bold text-slate-300 uppercase tracking-widest hover:border-[#4B2C82]/30 hover:text-[#4B2C82] transition-all flex items-center justify-center gap-2 mt-2 bg-slate-50/20"><Plus size={12} /> Rolle hinzufügen</button>
-                    </div>
+                        <div className="flex items-center gap-3 pl-6">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter flex items-center gap-1"><Clock size={12} className="text-slate-300" /> {role.startTime} - {role.endTime}</span>
+                          <div className="bg-white border border-slate-100 px-1.5 py-0.5 rounded-lg text-[9px] font-bold text-slate-400 uppercase tracking-widest shadow-sm">Prio {role.defaultPriority}</div>
+                        </div>
+                        <button onClick={() => setEditingRole({ role, groupId: group.id })} className="absolute top-3 right-3 opacity-0 group-hover/item:opacity-100 transition-opacity p-1.5 text-slate-300 hover:text-[#4B2C82] bg-white rounded-lg border border-slate-100 shadow-sm"><Edit2 size={14} /></button>
+                      </div>
+                    ))}
+                    <button onClick={() => setEditingRole({ role: { name: '', startTime: '08:00', endTime: '17:00', defaultPercentage: 100, defaultPriority: 2 }, groupId: group.id, isNew: true })} className="w-full py-3 border-2 border-dashed border-slate-100 rounded-2xl text-[10px] font-bold text-slate-300 uppercase tracking-widest hover:border-[#4B2C82]/30 hover:text-[#4B2C82] transition-all flex items-center justify-center gap-2 mt-2 bg-slate-50/20"><Plus size={12} /> Rolle hinzufügen</button>
+                  </div>
                 </div>
               ))}
             </div>

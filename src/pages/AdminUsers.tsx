@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserPlus, Mail, Shield, Send } from 'lucide-react';
+import { UserPlus, Shield, Send } from 'lucide-react';
 
 interface User {
     id: number;
@@ -65,10 +65,10 @@ const AdminUsers: React.FC = () => {
                                 </td>
                                 <td className="px-6 py-4">
                                     <span className={`flex items-center gap-1.5 text-sm font-medium ${user.status === 'active' ? 'text-emerald-600' :
-                                            user.status === 'invited' ? 'text-amber-500' : 'text-slate-400'
+                                        user.status === 'invited' ? 'text-amber-500' : 'text-slate-400'
                                         }`}>
                                         <span className={`w-2 h-2 rounded-full ${user.status === 'active' ? 'bg-emerald-500' :
-                                                user.status === 'invited' ? 'bg-amber-500' : 'bg-slate-400'
+                                            user.status === 'invited' ? 'bg-amber-500' : 'bg-slate-400'
                                             }`} />
                                         {user.status}
                                     </span>
@@ -95,20 +95,42 @@ const AdminUsers: React.FC = () => {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 ml-1">Vorname</label>
-                                    <input type="text" required className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl" />
+                                    <input
+                                        type="text"
+                                        required
+                                        value={formData.firstName}
+                                        onChange={e => setFormData(p => ({ ...p, firstName: e.target.value }))}
+                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl"
+                                    />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 ml-1">Nachname</label>
-                                    <input type="text" required className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl" />
+                                    <input
+                                        type="text"
+                                        required
+                                        value={formData.lastName}
+                                        onChange={e => setFormData(p => ({ ...p, lastName: e.target.value }))}
+                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl"
+                                    />
                                 </div>
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 ml-1">Email</label>
-                                <input type="email" required className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl" />
+                                <input
+                                    type="email"
+                                    required
+                                    value={formData.email}
+                                    onChange={e => setFormData(p => ({ ...p, email: e.target.value }))}
+                                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl"
+                                />
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 ml-1">Rolle</label>
-                                <select className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                                <select
+                                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl"
+                                    value={formData.role}
+                                    onChange={e => setFormData(p => ({ ...p, role: e.target.value }))}
+                                >
                                     <option value="mitarbeiter">Mitarbeiter</option>
                                     <option value="planer">Planer</option>
                                 </select>

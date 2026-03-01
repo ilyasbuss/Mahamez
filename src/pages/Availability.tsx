@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { PartialAvailability } from '../types';
 import AvailabilityCalendar from '../components/employee/AvailabilityCalendar';
 import CurrentSchedule from '../components/employee/CurrentSchedule';
@@ -12,8 +11,7 @@ import { Calendar, ClipboardList, Clock, LogOut, TrendingUp, User } from 'lucide
 type TabType = 'availability' | 'schedule' | 'shifts' | 'analyse';
 
 const Availability: React.FC = () => {
-    const navigate = useNavigate();
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
     const [activeTab, setActiveTab] = useState<TabType>('availability');
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [availability, setAvailability] = useState<Map<string, PartialAvailability>>(new Map());
@@ -105,7 +103,7 @@ const Availability: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-3">
                         <span className="text-sm text-slate-500 hidden md:block">
-                            {localStorage.getItem('mahamez_user_email') || 'Mitarbeiter'}
+                            {user?.email ?? 'Mitarbeiter'}
                         </span>
                     </div>
                 </header>
@@ -136,6 +134,8 @@ const Availability: React.FC = () => {
                 {activeTab === 'schedule' && <CurrentSchedule />}
 
                 {activeTab === 'shifts' && <MyShifts />}
+
+                {activeTab === 'analyse' && <EmployeeAnalytics />}
             </main>
         </div>
     );
