@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import InactivityModal from '../components/InactivityModal';
 
-interface User {
+export interface User {
     id: number;
     email: string;
     name: string;

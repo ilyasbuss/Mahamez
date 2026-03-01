@@ -34,7 +34,6 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
                     <AlertTriangle size={32} />
                 </div>
                 <h3 className="text-2xl font-bold text-slate-800 mb-2">Wirklich löschen?</h3>
-                <p className="text-slate-500 text-sm mb-1">Du bist dabei, folgenden Eintrag unwiderruflich zu löschen:</p>
                 <p className="font-bold text-slate-700 mb-8 px-4 py-2 bg-slate-50 rounded-xl inline-block">{typeLabels[type]}: {name}</p>
 
                 <div className="flex gap-3 mt-4">

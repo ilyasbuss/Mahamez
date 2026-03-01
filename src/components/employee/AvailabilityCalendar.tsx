@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isSameDay, isWeekend, startOfWeek, endOfWeek, addDays } from 'date-fns';
+import React, { useState, useEffect } from 'react';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isSameDay, isWeekend, startOfWeek, endOfWeek, addDays, getISOWeek } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Ban, Clock, X, Plus } from 'lucide-react';
 import { PartialAvailability, AvailabilityStatus } from '../../types';
-import { getHolidayStates, isHoliday, HOLIDAYS_2026, isSchoolHoliday } from '../../constants/holidays';
+import { isSchoolHoliday } from '../../constants/holidays';
+import { holidayService, Holiday } from '../../services/HolidayService';
 
 interface AvailabilityCalendarProps {
     currentMonth: Date;
@@ -23,6 +24,19 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
     const [editingDate, setEditingDate] = useState<string | null>(null);
     const [tempStatus, setTempStatus] = useState<AvailabilityStatus>('available');
     const [tempTime, setTempTime] = useState<string>('08:00');
+    const [dynamicHolidays, setDynamicHolidays] = useState<Holiday[]>([]);
+
+    useEffect(() => {
+        const fetchHolidays = async () => {
+            const holidays = await holidayService.getHolidays(currentMonth);
+            setDynamicHolidays(holidays);
+        };
+        fetchHolidays();
+    }, [currentMonth]);
+
+    const getHolidayForDate = (dateStr: string, state: 'BW' | 'RP') => {
+        return dynamicHolidays.find(h => h.date === dateStr && (h.states.includes(state) || h.states.includes(state.toLowerCase()) || h.states.includes('ALL')));
+    };
 
     // Bulk blocking state
     const [isBulkBlockingOpen, setIsBulkBlockingOpen] = useState(false);
@@ -187,9 +201,11 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                             const avail = availability.get(dateStr);
                             const isUnavailable = avail && avail.status !== 'available';
                             const dayOfWeek = day.getDay();
+                            const isMonday = dayOfWeek === 1;
                             const isWknd = dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
-                            const bwHoliday = isHoliday(dateStr, 'BW');
-                            const rpHoliday = isHoliday(dateStr, 'RP');
+                            
+                            const bwHoliday = getHolidayForDate(dateStr, 'BW');
+                            const rpHoliday = getHolidayForDate(dateStr, 'RP');
                             const holidayData = bwHoliday || rpHoliday;
 
                             const isBwSchool = isSchoolHoliday(dateStr, 'BW');
@@ -203,21 +219,28 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                     disabled={!isCurrentMonth}
                                     className={`
                     relative rounded-xl flex flex-col items-center border transition-all duration-200 py-4 px-2 min-h-[90px]
-                    ${!isCurrentMonth ? 'opacity-20 cursor-not-allowed bg-slate-50/30 border-slate-50' : ''}
+                    ${!isCurrentMonth ? 'opacity-40 cursor-not-allowed bg-slate-50/30 border-slate-200' : ''}
                     ${isCurrentMonth && holidayData
-                                            ? 'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-300 shadow-sm'
+                                            ? 'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-400 shadow-sm'
                                             : isCurrentMonth && isUnavailable
-                                                ? 'bg-red-50 border-red-200 text-red-600'
+                                                ? 'bg-red-50 border-red-300 text-red-600'
                                                 : isCurrentMonth && isSchool
-                                                    ? 'bg-orange-50/40 border-orange-100'
+                                                    ? 'bg-orange-50/40 border-orange-200'
                                                     : isCurrentMonth && isWknd
-                                                        ? 'bg-purple-50/50 border-purple-100'
+                                                        ? 'bg-purple-50/50 border-purple-200'
                                                         : isCurrentMonth
-                                                            ? 'bg-white border-slate-100 hover:border-purple-200 hover:shadow-md'
+                                                            ? 'bg-white border-slate-200 hover:border-purple-300 hover:shadow-md'
                                                             : ''
                                         }
                   `}
                                 >
+                                    {/* Monday KW Banner */}
+                                    {isMonday && isCurrentMonth && (
+                                        <div className="absolute top-0 left-0 bg-[#1D0B40] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-br-lg shadow-sm z-10">
+                                            KW {getISOWeek(day)}
+                                        </div>
+                                    )}
+
                                     {/* Holiday Name at Top */}
                                     {holidayData && isCurrentMonth && (
                                         <span className="text-[9px] font-bold text-orange-700 text-center leading-normal px-1 mb-auto w-full line-clamp-2">
@@ -287,13 +310,13 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                     Status
                                 </label>
                                 <div className="space-y-2">
-                                    {(['available', 'unavailable_full', 'unavailable_from', 'unavailable_until'] as AvailabilityStatus[]).map((status) => (
+                                    {(['unavailable_full', 'unavailable_from', 'unavailable_until'] as AvailabilityStatus[]).map((status) => (
                                         <button
                                             key={status}
                                             onClick={() => setTempStatus(status)}
                                             className={`w-full text-left px-4 py-3 rounded-xl border-2 transition-all ${tempStatus === status
                                                 ? 'border-[#4B2C82] bg-purple-50/50'
-                                                : 'border-slate-100 hover:border-slate-200 bg-white'
+                                                : 'border-slate-200 hover:border-slate-300 bg-white'
                                                 }`}
                                         >
                                             <span className="font-bold text-sm">{getStatusLabel(status)}</span>
@@ -309,7 +332,8 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                         Uhrzeit
                                     </label>
                                     <input
-                                        type="time"
+                                        type="text"
+                                        placeholder="HH:MM"
                                         value={tempTime}
                                         onChange={(e) => setTempTime(e.target.value)}
                                         className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-[#4B2C82] bg-slate-50 font-medium"
@@ -400,10 +424,11 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                         <span className="text-sm font-medium">Abwesend ab</span>
                                         {bulkFirstDayType === 'from' && (
                                             <input
-                                                type="time"
+                                                type="text"
+                                                placeholder="HH:MM"
                                                 value={bulkFirstDayTime}
                                                 onChange={(e) => setBulkFirstDayTime(e.target.value)}
-                                                className="ml-2 border rounded-lg px-2 py-1 text-sm"
+                                                className="ml-2 border-2 border-slate-200 rounded-lg px-2 py-1 text-sm outline-none focus:border-[#4B2C82]"
                                             />
                                         )}
                                     </label>
@@ -417,10 +442,11 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                         <span className="text-sm font-medium">Abwesend bis</span>
                                         {bulkFirstDayType === 'until' && (
                                             <input
-                                                type="time"
+                                                type="text"
+                                                placeholder="HH:MM"
                                                 value={bulkFirstDayTime}
                                                 onChange={(e) => setBulkFirstDayTime(e.target.value)}
-                                                className="ml-2 border rounded-lg px-2 py-1 text-sm"
+                                                className="ml-2 border-2 border-slate-200 rounded-lg px-2 py-1 text-sm outline-none focus:border-[#4B2C82]"
                                             />
                                         )}
                                     </label>
@@ -453,10 +479,11 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                             <span className="text-sm font-medium">Abwesend ab</span>
                                             {bulkLastDayType === 'from' && (
                                                 <input
-                                                    type="time"
+                                                    type="text"
+                                                    placeholder="HH:MM"
                                                     value={bulkLastDayTime}
                                                     onChange={(e) => setBulkLastDayTime(e.target.value)}
-                                                    className="ml-2 border rounded-lg px-2 py-1 text-sm"
+                                                    className="ml-2 border-2 border-slate-200 rounded-lg px-2 py-1 text-sm outline-none focus:border-[#4B2C82]"
                                                 />
                                             )}
                                         </label>
@@ -470,10 +497,11 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                             <span className="text-sm font-medium">Abwesend bis</span>
                                             {bulkLastDayType === 'until' && (
                                                 <input
-                                                    type="time"
+                                                    type="text"
+                                                    placeholder="HH:MM"
                                                     value={bulkLastDayTime}
                                                     onChange={(e) => setBulkLastDayTime(e.target.value)}
-                                                    className="ml-2 border rounded-lg px-2 py-1 text-sm"
+                                                    className="ml-2 border-2 border-slate-200 rounded-lg px-2 py-1 text-sm outline-none focus:border-[#4B2C82]"
                                                 />
                                             )}
                                         </label>

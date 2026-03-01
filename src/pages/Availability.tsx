@@ -5,31 +5,18 @@ import AvailabilityCalendar from '../components/employee/AvailabilityCalendar';
 import CurrentSchedule from '../components/employee/CurrentSchedule';
 import MyShifts from '../components/employee/MyShifts';
 import EmployeeAnalytics from '../components/employee/EmployeeAnalytics';
-import { Calendar, ClipboardList, Clock, LogOut, TrendingUp } from 'lucide-react';
-
-// Mahamez Logo Component (matching PlannerDashboard)
-const MahamezLogo = () => (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-[#9F7AEA]">
-        <circle cx="12" cy="12" r="8" stroke="#f97316" opacity="0.8" />
-        <rect x="4" y="4" width="6" height="6" rx="1.5" />
-        <rect x="14" y="4" width="6" height="6" rx="1.5" />
-        <rect x="4" y="14" width="6" height="6" rx="1.5" />
-        <rect x="14" y="14" width="6" height="6" rx="1.5" />
-    </svg>
-);
+import MahamezLogo from '../components/MahamezLogo';
+import { useAuth } from '../services/AuthContext';
+import { Calendar, ClipboardList, Clock, LogOut, TrendingUp, User } from 'lucide-react';
 
 type TabType = 'availability' | 'schedule' | 'shifts' | 'analyse';
 
 const Availability: React.FC = () => {
     const navigate = useNavigate();
+    const { logout } = useAuth();
     const [activeTab, setActiveTab] = useState<TabType>('availability');
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [availability, setAvailability] = useState<Map<string, PartialAvailability>>(new Map());
-
-    const handleLogout = () => {
-        localStorage.removeItem('mahamez_auth');
-        navigate('/login');
-    };
 
     const handleAvailabilityChange = (date: string, avail: PartialAvailability | null) => {
         setAvailability((prev) => {
@@ -59,12 +46,12 @@ const Availability: React.FC = () => {
 
                 <div className="space-y-0.5 pt-2">
                     <button
-                        onClick={() => setActiveTab('availability')}
-                        className={`w-full flex items-center space-x-3 px-4 py-2 rounded-lg transition ${activeTab === 'availability' ? 'bg-[#4B2C82]' : 'hover:bg-white/10'
+                        onClick={() => setActiveTab('shifts')}
+                        className={`w-full flex items-center space-x-3 px-4 py-2 rounded-lg transition ${activeTab === 'shifts' ? 'bg-[#4B2C82]' : 'hover:bg-white/10'
                             }`}
                     >
-                        <Calendar size={18} />
-                        <span>Verfügbarkeiten eintragen</span>
+                        <User size={18} />
+                        <span>Meine Schichten</span>
                     </button>
 
                     <button
@@ -77,12 +64,12 @@ const Availability: React.FC = () => {
                     </button>
 
                     <button
-                        onClick={() => setActiveTab('shifts')}
-                        className={`w-full flex items-center space-x-3 px-4 py-2 rounded-lg transition ${activeTab === 'shifts' ? 'bg-[#4B2C82]' : 'hover:bg-white/10'
+                        onClick={() => setActiveTab('availability')}
+                        className={`w-full flex items-center space-x-3 px-4 py-2 rounded-lg transition ${activeTab === 'availability' ? 'bg-[#4B2C82]' : 'hover:bg-white/10'
                             }`}
                     >
-                        <Clock size={18} />
-                        <span>Meine Schichten</span>
+                        <Calendar size={18} />
+                        <span>Verfügbarkeiten eintragen</span>
                     </button>
 
                     <button
@@ -92,6 +79,13 @@ const Availability: React.FC = () => {
                     >
                         <TrendingUp size={18} />
                         <span>Analyse</span>
+                    </button>
+                </div>
+
+                <div className="mt-auto pt-3 border-t border-white/10">
+                    <button onClick={logout} className="w-full flex items-center space-x-3 px-4 py-2 rounded-lg transition text-red-400 hover:bg-red-500/10 hover:text-red-300">
+                        <LogOut size={18} />
+                        <span>Logout</span>
                     </button>
                 </div>
 
@@ -113,13 +107,6 @@ const Availability: React.FC = () => {
                         <span className="text-sm text-slate-500 hidden md:block">
                             {localStorage.getItem('mahamez_user_email') || 'Mitarbeiter'}
                         </span>
-                        <button
-                            onClick={handleLogout}
-                            className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-red-500 transition"
-                            title="Abmelden"
-                        >
-                            <LogOut size={20} />
-                        </button>
                     </div>
                 </header>
 

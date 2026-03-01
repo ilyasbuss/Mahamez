@@ -28,9 +28,9 @@ const InactivityModal: React.FC<InactivityModalProps> = ({ onContinue, expiresIn
                 <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6 text-amber-600">
                     <Clock size={40} />
                 </div>
-                <h2 className="text-2xl font-bold text-slate-800 mb-2">Inaktivitt</h2>
+                <h2 className="text-2xl font-bold text-slate-800 mb-2">Inaktivität</h2>
                 <p className="text-slate-500 mb-6">
-                    Sie werden in <span className="font-bold text-amber-600">{formatTime(seconds)}</span> aufgrund von Inaktivitt abgemeldet.
+                    Sie werden in <span className="font-bold text-amber-600">{formatTime(seconds)}</span> aufgrund von Inaktivität abgemeldet.
                 </p>
                 <div className="flex flex-col gap-3">
                     <button

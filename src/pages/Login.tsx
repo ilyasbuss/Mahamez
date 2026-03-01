@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
-import { useAuth } from '../services/AuthContext';
+import { useAuth, User } from '../services/AuthContext';
 import MahamezLogo from '../components/MahamezLogo';
 
 const Login: React.FC = () => {
@@ -36,38 +36,21 @@ const Login: React.FC = () => {
         setError(null);
         setLoading(true);
 
-        try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-            const response = await fetch(`${apiUrl}/api/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                login(data.access_token, data.refresh_token, data.user);
-                navigate(data.user.role === 'planer' ? '/planner' : '/availability');
-            } else if (response.status === 423) {
-                // Locked
-                const lockedUntil = data.locked_until ? new Date(data.locked_until).getTime() : Date.now() + 1800000;
-                const diff = Math.max(0, Math.floor((lockedUntil - Date.now()) / 1000));
-                setLockCountdown(diff);
-                setError(data.detail);
-            } else if (response.status === 401) {
-                setError(data.detail);
-                if (data.remaining_attempts) {
-                    setRemainingAttempts(data.remaining_attempts);
-                }
+        // Mock login for UX demonstration
+        setTimeout(() => {
+            if (email === 'planer@swr.de' && password === 'planer') {
+                const mockUser: User = { id: 1, email: 'planer@swr.de', name: 'Planer Admin', role: 'planer' };
+                login('mock_token', 'mock_refresh', mockUser);
+                navigate('/planner');
+            } else if (email === 'user@swr.de' && password === 'user') {
+                const mockUser: User = { id: 2, email: 'user@swr.de', name: 'Mitarbeiter User', role: 'mitarbeiter' };
+                login('mock_token', 'mock_refresh', mockUser);
+                navigate('/availability');
             } else {
-                setError(data.detail || "Ein Fehler ist aufgetreten.");
+                setError("Ungültige Anmeldedaten. (Demo: planer@swr.de / planer oder user@swr.de / user)");
             }
-        } catch (err) {
-            setError("Verbindungsfehler zum Server. Ist das Backend gestartet?");
-        } finally {
             setLoading(false);
-        }
+        }, 800);
     };
 
     return (

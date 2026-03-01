@@ -19,10 +19,18 @@ import {
   PlusCircle,
   Tag,
   Download,
+  Send,
   MessageSquareWarning,
-  Settings2
+  Settings2,
+  GripVertical,
+  LogOut,
+  User,
+  Calendar
 } from 'lucide-react';
 import MahamezLogo from '../components/MahamezLogo';
+import MyShifts from '../components/employee/MyShifts';
+import AvailabilityCalendar from '../components/employee/AvailabilityCalendar';
+import { PartialAvailability } from '../types';
 import {
   BarChart,
   Bar,
@@ -42,9 +50,11 @@ import RulesConfig from '../components/planner/RulesConfig';
 import DeleteConfirmationModal from '../components/planner/DeleteConfirmationModal';
 import RoleEditorModal from '../components/planner/RoleEditorModal';
 import GroupEditorModal from '../components/planner/GroupEditorModal';
+import RedaktionManagerModal from '../components/planner/RedaktionManagerModal';
 import NotificationPopover from '../components/planner/NotificationPopover';
 import WeeklyViewMockups from '../components/planner/WeeklyViewMockups';
 import { usePlannerDashboard } from '../hooks/usePlannerDashboard';
+import { useAuth } from '../services/AuthContext';
 
 const PlannerDashboard: React.FC = () => {
   const {
@@ -63,16 +73,42 @@ const PlannerDashboard: React.FC = () => {
     isAddMenuOpen, setIsAddMenuOpen,
     cancelConf, setCancelConf,
     deleteConf, deleteTimer,
+    redaktionen, handleAddRedaktion, handleDeleteRedaktion,
     roleTabFilters, selectedDept, setSelectedDept,
     shadowingRows, allRolesWithShadowing,
     activeNotifications, notificationsHistory,
     markAsRead,
     handleAiOptimize, addManualShift, deleteShift,
+    handleDeleteRole, handleDeleteGroup,
     handleOpenAddModal, handleOpenEditModal, handleSaveEmployee,
     confirmDeleteAction, handleCloseModal, handlePreviousWeek, handleNextWeek,
     handleCloseDeleteConf, handleExport, toggleShadowing, toggleDepartmentFilter,
-    handleDeleteEmployee, handleAddRow, handleReorderRoles, handleEditRow
+    handleDeleteEmployee, handleAddRow, handleReorderRoles, handleEditRow, handleReorderRoleInGroup,
+    filteredSkillGroups, rolesTabSkillGroups,
+    hasUnpublishedChanges, handlePublish
   } = usePlannerDashboard();
+
+  const { logout } = useAuth();
+
+  const [draggedRole, setDraggedRole] = React.useState<{ groupId: string; index: number } | null>(null);
+  const [dragOverRole, setDragOverRole] = React.useState<{ groupId: string; index: number } | null>(null);
+
+  const [isRedaktionManagerOpen, setIsRedaktionManagerOpen] = React.useState(false);
+
+  const [currentMonth, setCurrentMonth] = React.useState(new Date());
+  const [availability, setAvailability] = React.useState<Map<string, PartialAvailability>>(new Map());
+
+  const handleAvailabilityChange = (date: string, avail: PartialAvailability | null) => {
+    setAvailability((prev) => {
+      const next = new Map(prev);
+      if (avail === null) {
+        next.delete(date);
+      } else {
+        next.set(date, avail);
+      }
+      return next;
+    });
+  };
 
   const statsData = useMemo(() => {
     // ISO date strings are lexicographically comparable — no need to call parseISO twice per shift
@@ -83,12 +119,6 @@ const PlannerDashboard: React.FC = () => {
       return { name: emp.name, hours, limit: emp.maxHoursPerWeek, over: hours > emp.maxHoursPerWeek };
     });
   }, [employees, shifts, weekDays]);
-
-  const filteredSkillGroups = useMemo(() => {
-    if (selectedDept === 'Moderation') return skillGroups.filter(g => g.id === 'g_moderation');
-    if (selectedDept === 'Onlineredaktion') return skillGroups.filter(g => g.departments.includes('Online-Redaktion'));
-    return skillGroups.filter(g => g.departments.includes('Radio-Redaktion') && g.id !== 'g_moderation');
-  }, [skillGroups, selectedDept]);
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row text-slate-700">
@@ -107,20 +137,29 @@ const PlannerDashboard: React.FC = () => {
           <button onClick={() => setActiveTab('rules')} className={`w-full flex items-center space-x-3 px-4 py-2 rounded-lg transition ${activeTab === 'rules' ? 'bg-[#4B2C82]' : 'hover:bg-white/10'}`}><Settings2 size={18} /><span>Regeln</span></button>
           <button onClick={() => setActiveTab('stats')} className={`w-full flex items-center space-x-3 px-4 py-2 rounded-lg transition ${activeTab === 'stats' ? 'bg-[#4B2C82]' : 'hover:bg-white/10'}`}><BarChart3 size={18} /><span>Statistiken</span></button>
         </div>
+        <div className="pt-2 border-t border-white/10 space-y-0.5">
+          <button onClick={() => setActiveTab('my-shifts')} className={`w-full flex items-center space-x-3 px-4 py-2 rounded-lg transition ${activeTab === 'my-shifts' ? 'bg-[#4B2C82]' : 'hover:bg-white/10'}`}><User size={18} /><span>Meine Schichten</span></button>
+          <button onClick={() => setActiveTab('my-availability')} className={`w-full flex items-center space-x-3 px-4 py-2 rounded-lg transition ${activeTab === 'my-availability' ? 'bg-[#4B2C82]' : 'hover:bg-white/10'}`}><Calendar size={18} /><span>Verfügbarkeiten eintragen</span></button>
+        </div>
         <div className="mt-auto pt-3 border-t border-white/10">
-          <button onClick={handleAiOptimize} disabled={isAiLoading} className="w-full bg-[#4B2C82] hover:bg-[#5B3798] flex items-center justify-center space-x-2 py-2 rounded-xl font-medium transition shadow-lg">{isAiLoading ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> : <><Sparkles size={16} className="text-[#9F7AEA]" /><span>Regel erstellen</span></>}</button>
+          <button onClick={logout} className="w-full flex items-center space-x-3 px-4 py-2 rounded-lg transition text-red-400 hover:bg-red-500/10 hover:text-red-300">
+            <LogOut size={18} />
+            <span>Logout</span>
+          </button>
         </div>
       </nav>
 
       <main className="flex-1 p-4 md:p-4 overflow-y-auto bg-[#f8fafc]">
         <header className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
           <div className="flex items-center gap-2.5 flex-wrap">
-            <h1 className="text-xl font-bold text-slate-800">
+            <h1 className="text-xl font-bold text-slate-800 w-[220px] shrink-0">
               {activeTab === 'calendar' ? 'Aktueller Dienstplan' :
                 activeTab === 'new-plan' ? 'Neuer Dienstplan' :
                   activeTab === 'employees' ? 'Personalverwaltung' :
                     activeTab === 'roles' ? 'Rollenverwaltung' :
-                      activeTab === 'rules' ? 'Dienstplanregeln' : 'Auslastung & Analyse'}
+                      activeTab === 'rules' ? 'Dienstplanregeln' : 
+                    activeTab === 'my-shifts' ? 'Meine Schichten' :
+                      activeTab === 'my-availability' ? 'Meine Verfügbarkeiten' : 'Auslastung & Analyse'}
             </h1>
             {(activeTab === 'calendar' || activeTab === 'new-plan') && (
               <div className="flex items-center bg-white border rounded-xl px-1 py-0.5 shadow-sm">
@@ -131,12 +170,32 @@ const PlannerDashboard: React.FC = () => {
             )}
           </div>
 
-          {activeTab === 'new-plan' && (
-            <div className="flex justify-center flex-1 order-3 md:order-none w-full md:w-auto">
-              <button onClick={handleAiOptimize} disabled={isAiLoading} className="bg-[#4B2C82] hover:bg-[#5B3798] text-white px-8 py-1.5 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2">
-                <Sparkles size={16} className="text-[#9F7AEA]" />
-                <span>Autofill</span>
-              </button>
+          {(activeTab === 'calendar' || activeTab === 'new-plan' || activeTab === 'rules') && (
+            <div className="flex justify-center flex-1 order-3 md:order-none w-full md:w-auto gap-3">
+              {activeTab === 'calendar' && (
+                <button 
+                  onClick={handlePublish} 
+                  disabled={!hasUnpublishedChanges} 
+                  className={`px-8 h-9 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2 ${
+                    hasUnpublishedChanges 
+                      ? 'bg-[#4B2C82] hover:bg-[#5B3798] text-white' 
+                      : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+                  }`}
+                >
+                  <Send size={16} className={hasUnpublishedChanges ? 'text-[#9F7AEA]' : 'text-slate-300'} />
+                  <span>Veröffentlichen</span>
+                </button>
+              )}
+              {activeTab === 'new-plan' ? (
+                <button onClick={handleAiOptimize} disabled={isAiLoading} className="bg-[#4B2C82] hover:bg-[#5B3798] text-white px-8 h-9 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2">
+                  <Sparkles size={16} className="text-[#9F7AEA]" />
+                  <span>Autofill</span>
+                </button>
+              ) : activeTab === 'rules' ? (
+                <button onClick={handleAiOptimize} disabled={isAiLoading} className="bg-[#4B2C82] hover:bg-[#5B3798] text-white px-8 h-9 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2">
+                  {isAiLoading ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> : <><Sparkles size={16} className="text-[#9F7AEA]" /><span>Regel erstellen</span></>}
+                </button>
+              ) : null}
             </div>
           )}
 
@@ -227,43 +286,74 @@ const PlannerDashboard: React.FC = () => {
 
         {activeTab === 'roles' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center gap-4 bg-white p-3 rounded-2xl border shadow-sm flex-wrap">
-              <button onClick={() => toggleDepartmentFilter(roleTabFilters[0]) /* Simplified for logic */} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${roleTabFilters.length === 0 ? 'bg-[#4B2C82] text-white shadow-lg shadow-black/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}>Alle anzeigen</button>
-              {REDAKTIONS_OPTIONEN.map(dept => {
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
+              <button onClick={() => toggleDepartmentFilter(roleTabFilters[0])} className={`px-6 py-2.5 rounded-2xl font-bold text-sm transition-all shadow-sm ${roleTabFilters.length === 0 ? 'bg-[#4B2C82] text-white shadow-lg shadow-purple-900/20' : 'bg-white text-slate-400 hover:bg-slate-50'}`}>Alle anzeigen</button>
+              {redaktionen.map(dept => {
                 const isActive = roleTabFilters.includes(dept);
                 return (
-                  <button key={dept} onClick={() => toggleDepartmentFilter(dept)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${isActive ? 'bg-[#4B2C82] text-white shadow-lg shadow-black/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}>
+                  <button key={dept} onClick={() => toggleDepartmentFilter(dept)} className={`px-6 py-2.5 rounded-2xl font-bold text-sm transition-all shadow-sm ${isActive ? 'bg-[#4B2C82] text-white shadow-lg shadow-purple-900/20' : 'bg-white text-slate-400 hover:bg-slate-50'}`}>
                     {dept}
                   </button>
                 );
               })}
+              <button
+                onClick={() => setIsRedaktionManagerOpen(true)}
+                className="ml-auto p-2.5 text-slate-300 hover:text-[#4B2C82] hover:bg-slate-50 rounded-2xl transition-all border border-transparent hover:border-slate-100 shadow-sm"
+                title="Redaktionen verwalten"
+              >
+                <Edit2 size={18} />
+              </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {filteredSkillGroups.map(group => (
-                <div key={group.id} className="bg-white border border-slate-200 rounded-3xl shadow-sm flex flex-col hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 group">
-                  <div className="p-3 border-b flex flex-col gap-1 bg-slate-50/50 rounded-t-3xl">
+              {rolesTabSkillGroups.map(group => (
+                <div key={group.id} className="bg-white border border-slate-200 rounded-[2rem] shadow-sm flex flex-col hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 group">
+                  <div className="p-4 border-b border-slate-100 flex flex-col gap-1 bg-slate-50/50 rounded-t-[2rem]">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-bold text-slate-800 flex items-center gap-2 text-[18px]">
-                        <div className="p-1.5 bg-purple-100 rounded-lg"><LayoutGrid size={16} className="text-[#4B2C82]" /></div>
+                      <h3 className="font-bold text-slate-800 flex items-center gap-3 text-[16px] uppercase tracking-tight">
+                        <div className="p-2 bg-purple-50 rounded-xl border border-purple-100/50"><LayoutGrid size={16} className="text-[#4B2C82]" /></div>
                         {group.title}
                       </h3>
-                      <button onClick={() => setEditingGroup(group)} className="p-1.5 text-slate-400 hover:text-[#4B2C82] transition rounded-lg hover:bg-white"><Edit2 size={14} /></button>
+                      <button onClick={() => setEditingGroup(group)} className="p-2 text-slate-300 hover:text-[#4B2C82] transition rounded-xl hover:bg-white border border-transparent hover:border-slate-100 shadow-sm"><Edit2 size={14} /></button>
                     </div>
                   </div>
-                  <div className="p-3 space-y-2 flex-1">
-                    {group.roles.map(role => (
-                      <div key={role.name} className="flex flex-col gap-0.5 py-1.5 px-2 rounded-2xl border border-slate-100 bg-slate-50/30 hover:bg-purple-50/50 hover:border-purple-100 transition relative group/item">
-                        <span className="font-bold text-slate-700 text-[16px] leading-tight block pr-8">{role.name}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[14px] text-slate-400 font-bold flex items-center gap-1"><Clock size={12} /> {role.startTime} - {role.endTime}</span>
-                          <div className="bg-white border px-1 py-0.5 rounded text-[10px] font-bold text-slate-400 shrink-0">Prio {role.defaultPriority}</div>
+                    <div className="p-4 space-y-3 flex-1">
+                      {group.roles.map((role, rIdx) => (
+                        <div
+                          key={role.name}
+                          draggable
+                          onDragStart={() => setDraggedRole({ groupId: group.id, index: rIdx })}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            setDragOverRole({ groupId: group.id, index: rIdx });
+                          }}
+                          onDragEnd={() => {
+                            if (draggedRole && dragOverRole && draggedRole.groupId === dragOverRole.groupId) {
+                              handleReorderRoleInGroup(draggedRole.groupId, draggedRole.index, dragOverRole.index);
+                            }
+                            setDraggedRole(null);
+                            setDragOverRole(null);
+                          }}
+                          className={`flex flex-col gap-1 py-3 px-4 rounded-2xl border border-slate-100 bg-slate-50/30 hover:bg-purple-50/50 hover:border-purple-100 transition-all relative group/item
+                            ${draggedRole?.groupId === group.id && draggedRole?.index === rIdx ? 'opacity-30' : ''}
+                            ${dragOverRole?.groupId === group.id && dragOverRole?.index === rIdx ? 'border-t-2 border-t-[#4B2C82]' : ''}
+                          `}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="text-slate-300 cursor-grab active:cursor-grabbing hover:text-[#4B2C82] transition-colors">
+                              <GripVertical size={14} />
+                            </div>
+                            <span className="font-bold text-slate-900 text-[13px] uppercase tracking-tight leading-none pr-8">{role.name}</span>
+                          </div>
+                          <div className="flex items-center gap-3 pl-6">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter flex items-center gap-1"><Clock size={12} className="text-slate-300" /> {role.startTime} - {role.endTime}</span>
+                            <div className="bg-white border border-slate-100 px-1.5 py-0.5 rounded-lg text-[9px] font-bold text-slate-400 uppercase tracking-widest shadow-sm">Prio {role.defaultPriority}</div>
+                          </div>
+                          <button onClick={() => setEditingRole({ role, groupId: group.id })} className="absolute top-3 right-3 opacity-0 group-hover/item:opacity-100 transition-opacity p-1.5 text-slate-300 hover:text-[#4B2C82] bg-white rounded-lg border border-slate-100 shadow-sm"><Edit2 size={14} /></button>
                         </div>
-                        <button onClick={() => setEditingRole({ role, groupId: group.id })} className="absolute top-2 right-2 opacity-0 group-hover/item:opacity-100 transition-opacity p-1 text-slate-300 hover:text-[#4B2C82]"><Edit2 size={14} /></button>
-                      </div>
-                    ))}
-                    <button onClick={() => setEditingRole({ role: { name: '', startTime: '08:00', endTime: '17:00', defaultPercentage: 100, defaultPriority: 2 }, groupId: group.id, isNew: true })} className="w-full py-2 border-2 border-dashed border-slate-100 rounded-2xl text-[9px] font-bold text-slate-300 uppercase tracking-widest hover:border-[#4B2C82]/20 hover:text-[#4B2C82] transition-all flex items-center justify-center gap-2 mt-1"><Plus size={10} /> Rolle hinzufügen</button>
-                  </div>
+                      ))}
+                      <button onClick={() => setEditingRole({ role: { name: '', startTime: '08:00', endTime: '17:00', defaultPercentage: 100, defaultPriority: 2 }, groupId: group.id, isNew: true })} className="w-full py-3 border-2 border-dashed border-slate-100 rounded-2xl text-[10px] font-bold text-slate-300 uppercase tracking-widest hover:border-[#4B2C82]/30 hover:text-[#4B2C82] transition-all flex items-center justify-center gap-2 mt-2 bg-slate-50/20"><Plus size={12} /> Rolle hinzufügen</button>
+                    </div>
                 </div>
               ))}
             </div>
@@ -304,6 +394,31 @@ const PlannerDashboard: React.FC = () => {
             </div>
           </div>
         )}
+
+        {activeTab === 'my-shifts' && (
+          <MyShifts />
+        )}
+
+        {activeTab === 'my-availability' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-800">Verfügbarkeiten verwalten</h2>
+              <button
+                onClick={() => alert('Verfügbarkeiten gespeichert!')}
+                className="px-8 py-3 bg-[#4B2C82] text-white rounded-2xl font-bold shadow-lg shadow-purple-900/20 hover:bg-[#5B3798] transition-all"
+              >
+                Speichern
+              </button>
+            </div>
+            <AvailabilityCalendar
+              currentMonth={currentMonth}
+              onMonthChange={setCurrentMonth}
+              onMonthJump={setCurrentMonth}
+              availability={availability}
+              onAvailabilityChange={handleAvailabilityChange}
+            />
+          </div>
+        )}
       </main>
 
       {/* Modals and Confirms */}
@@ -332,6 +447,7 @@ const PlannerDashboard: React.FC = () => {
         <RoleEditorModal
           editingRole={editingRole}
           skillGroups={skillGroups}
+          redaktionen={redaktionen}
           onSetEditingRole={setEditingRole}
           onSave={() => {
             const { role, groupId, isNew } = editingRole;
@@ -348,15 +464,7 @@ const PlannerDashboard: React.FC = () => {
             setEditingRole(null);
           }}
           onClose={handleCloseModal}
-          onDelete={(groupId, roleName) => {
-            setSkillGroups(prev => prev.map(g => {
-              if (g.id === groupId) {
-                return { ...g, roles: g.roles.filter(r => r.name !== roleName) };
-              }
-              return g;
-            }));
-            setEditingRole(null);
-          }}
+          onDelete={handleDeleteRole}
         />
       )}
 
@@ -376,10 +484,16 @@ const PlannerDashboard: React.FC = () => {
             setEditingGroup(null);
           }}
           onClose={handleCloseModal}
-          onDelete={(groupId) => {
-            setSkillGroups(prev => prev.filter(g => g.id !== groupId));
-            setEditingGroup(null);
-          }}
+          onDelete={handleDeleteGroup}
+        />
+      )}
+
+      {isRedaktionManagerOpen && (
+        <RedaktionManagerModal
+          redaktionen={redaktionen}
+          onAdd={handleAddRedaktion}
+          onDelete={handleDeleteRedaktion}
+          onClose={() => setIsRedaktionManagerOpen(false)}
         />
       )}
 
@@ -387,6 +501,7 @@ const PlannerDashboard: React.FC = () => {
         isOpen={isModalOpen && !!editingEmployee}
         employee={editingEmployee}
         skillGroups={skillGroups}
+        redaktionen={redaktionen}
         allEmployees={employees}
         onClose={handleCloseModal}
         onSave={handleSaveEmployee}

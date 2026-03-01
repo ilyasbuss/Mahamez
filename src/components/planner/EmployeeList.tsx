@@ -93,67 +93,88 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ employees, skillGroups, onE
 
     return (
         <div className="space-y-2.5">
-            <div className="bg-white p-2.5 border rounded-2xl shadow-sm flex items-center gap-3">
+            <div className="bg-white p-3 border rounded-3xl shadow-sm flex items-center gap-3">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input type="text" placeholder="Personen oder Rollen suchen" value={employeeSearchTerm} onChange={(e) => setEmployeeSearchTerm(e.target.value)} className="w-full pl-10 pr-10 py-1.5 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-[#4B2C82]/20 font-medium text-sm" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input 
+                        type="text" 
+                        placeholder="Personen oder Rollen suchen..." 
+                        value={employeeSearchTerm} 
+                        onChange={(e) => setEmployeeSearchTerm(e.target.value)} 
+                        className="w-full pl-11 pr-10 py-2.5 bg-slate-50/50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-[#4B2C82]/10 font-bold text-sm transition-all" 
+                    />
                 </div>
             </div>
             <div className="flex flex-wrap gap-2 px-1">
-                {departments.map(dept => {
-                    const isSelected = selectedDepartments.includes(dept);
-                    return (
-                        <button
-                            key={dept}
-                            onClick={() => toggleDepartment(dept)}
-                            className={`px-3 py-1.5 rounded-xl border text-[11px] font-bold transition-all shadow-sm ${isSelected ? 'border-[#4B2C82] bg-purple-50 text-[#4B2C82]' : 'border-slate-100 bg-white text-slate-400 hover:bg-slate-50'
-                                }`}
-                        >
-                            {dept}
-                        </button>
-                    );
-                })}
+                {departments.map(dept => (
+                    <button
+                        key={dept}
+                        onClick={() => toggleDepartment(dept)}
+                        className={`px-6 py-2.5 rounded-2xl font-bold text-sm transition-all shadow-sm ${selectedDepartments.includes(dept)
+                            ? 'bg-[#4B2C82] text-white shadow-lg shadow-purple-900/20'
+                            : 'bg-white text-slate-400 hover:bg-slate-50'
+                        }`}
+                    >
+                        {dept}
+                    </button>
+                ))}
             </div>
-            <div className="bg-white border rounded-2xl shadow-sm overflow-hidden">
-                <table className="w-full text-left">
-                    <thead className="bg-slate-50 border-b">
+            <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
+                <table className="w-full text-left border-collapse">
+                    <thead className="bg-slate-50/80 border-b border-slate-100">
                         <tr>
-                            <th className="px-4 py-2 text-sm font-semibold text-slate-600 uppercase"><div className="flex items-center gap-2">Team<button onClick={() => toggleEmployeeSort('name')} className={`p-1 rounded hover:bg-slate-200 transition ${employeeSort.key === 'name' ? 'text-[#4B2C82]' : 'text-slate-400'}`}>{employeeSort.key === 'name' && employeeSort.direction === 'desc' ? <ChevronDown size={14} /> : <ChevronUp size={14} />}</button></div></th>
-                            <th className="px-4 py-2 text-sm font-semibold text-slate-600 uppercase"><div className="flex items-center gap-2">Rollen<button onClick={() => toggleEmployeeSort('roles')} className={`p-1 rounded hover:bg-slate-200 transition ${employeeSort.key === 'roles' ? 'text-[#4B2C82]' : 'text-slate-400'}`}>{employeeSort.key === 'roles' && employeeSort.direction === 'desc' ? <ChevronDown size={14} /> : <ChevronUp size={14} />}</button></div></th>
-                            <th className="px-4 py-2 text-sm font-semibold text-slate-600 uppercase text-right">Bearbeiten</th>
+                            <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                                <div className="flex items-center gap-2">
+                                    Team
+                                    <button onClick={() => toggleEmployeeSort('name')} className={`p-1 rounded-lg hover:bg-slate-200 transition ${employeeSort.key === 'name' ? 'text-[#4B2C82]' : 'text-slate-300'}`}>
+                                        {employeeSort.key === 'name' && employeeSort.direction === 'desc' ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
+                                    </button>
+                                </div>
+                            </th>
+                            <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                                <div className="flex items-center gap-2">
+                                    Primäre Rollen
+                                    <button onClick={() => toggleEmployeeSort('roles')} className={`p-1 rounded-lg hover:bg-slate-200 transition ${employeeSort.key === 'roles' ? 'text-[#4B2C82]' : 'text-slate-300'}`}>
+                                        {employeeSort.key === 'roles' && employeeSort.direction === 'desc' ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
+                                    </button>
+                                </div>
+                            </th>
+                            <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Aktion</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y">
+                    <tbody className="divide-y divide-slate-50">
                         {filteredEmployees.map(e => (
-                            <tr key={e.id} className="hover:bg-slate-50 transition">
-                                <td className="px-4 py-2 flex items-center space-x-3">
-                                    <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center text-[#4B2C82] font-bold text-xs">
-                                        {getDisplayNameInitials(e)}
-                                    </div>
-                                    <div>
-                                        <div className="font-medium text-slate-700 text-sm leading-tight">{e.name}</div>
-                                        <div className="text-[10px] text-slate-400">{e.email || 'Keine Email'} • {e.role}</div>
+                            <tr key={e.id} className="hover:bg-slate-50/50 transition-colors group">
+                                <td className="px-6 py-2.5">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="w-9 h-9 rounded-2xl bg-purple-50 flex items-center justify-center text-[#4B2C82] font-bold text-xs shadow-sm border border-purple-100/50">
+                                            {getDisplayNameInitials(e)}
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-slate-900 text-[13px] uppercase tracking-tight leading-none mb-1">{e.name}</div>
+                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{e.email || 'Keine Email'} • {e.role}</div>
+                                        </div>
                                     </div>
                                 </td>
-                                <td className="px-4 py-2">
-                                    <div className="flex flex-wrap gap-1">
+                                <td className="px-6 py-2.5">
+                                    <div className="flex flex-wrap gap-1.5">
                                         {e.skillAssignments
                                             .sort((a, b) => b.skill.localeCompare(a.skill))
                                             .slice(0, 3)
                                             .map((sa, i) => (
-                                                <span key={i} className="bg-purple-50 text-[#4B2C82] border border-purple-100 px-1.5 py-0.5 rounded-md text-[10px] font-medium">
+                                                <span key={i} className="bg-white text-[#4B2C82] border border-slate-100 px-2 py-1 rounded-xl text-[10px] font-bold shadow-sm uppercase tracking-tight">
                                                     {sa.skill}
                                                 </span>
                                             ))
                                         }
                                         {e.skillAssignments.length > 3 && (
-                                            <span className="text-[9px] text-slate-400 self-center">+{e.skillAssignments.length - 3}</span>
+                                            <span className="text-[10px] font-bold text-slate-300 self-center ml-1">+{e.skillAssignments.length - 3}</span>
                                         )}
                                     </div>
                                 </td>
-                                <td className="px-4 py-2 text-right">
-                                    <button onClick={() => onEdit(e)} className="p-1 text-slate-400 hover:text-[#4B2C82] transition">
-                                        <Edit2 size={13} />
+                                <td className="px-6 py-2.5 text-right">
+                                    <button onClick={() => onEdit(e)} className="p-2 text-slate-300 hover:text-[#4B2C82] hover:bg-white rounded-xl transition-all shadow-sm opacity-0 group-hover:opacity-100 border border-transparent hover:border-slate-100">
+                                        <Edit2 size={14} />
                                     </button>
                                 </td>
                             </tr>

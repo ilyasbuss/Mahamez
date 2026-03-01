@@ -1,9 +1,0 @@
-fastapi[all]
-sqlalchemy
-bcrypt
-pyjwt[crypto]
-passlib
-python-multipart
-python-dotenv
-aiosqlite
-slowapi

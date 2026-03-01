@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { Employee, Shift, ShiftTypeID } from "../types";
+import { Employee, Shift, ShiftTypeID } from "@/src/types";
 
 // Lazy singleton: only instantiated on first AI call, not at module load time.
 // This avoids a crash when process.env.API_KEY is undefined at startup.

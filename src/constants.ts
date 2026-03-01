@@ -40,6 +40,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
   {
     id: '1',
     name: 'Sabrina Kemmer',
+    email: 'sabrina.kemmer@swr.de',
     role: 'Festangestellt (unbefristet)',
     departments: ['Radio-Redaktion'],
     skillAssignments: [
@@ -54,6 +55,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
   {
     id: '2',
     name: 'Joost Schmidt',
+    email: 'joost.schmidt@swr.de',
     role: 'Frei (unbefristet)',
     departments: ['Radio-Redaktion', 'Online-Redaktion'],
     skillAssignments: [
@@ -67,6 +69,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
   {
     id: '3',
     name: 'Vanessa Auer',
+    email: 'vanessa.auer@swr.de',
     role: 'fest frei, unbefristet',
     departments: ['Radio-Redaktion', 'Online-Redaktion'],
     skillAssignments: [
@@ -86,6 +89,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
   {
     id: '4',
     name: 'Steffen Auer',
+    email: 'steffen.auer@swr.de',
     role: 'Frei (unbefristet)',
     departments: ['Radio-Redaktion'],
     skillAssignments: [{ skill: 'Redakteur Comedy', percentage: 100, priority: 2 }],
@@ -97,6 +101,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
   {
     id: '5',
     name: 'Stefan Hoyer',
+    email: 'stefan.hoyer@swr.de',
     role: 'Festangestellt (unbefristet)',
     departments: ['Radio-Redaktion'],
     skillAssignments: [
@@ -120,6 +125,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
   {
     id: '6',
     name: 'Manuela Rid',
+    email: 'manuela.rid@swr.de',
     role: 'Festangestellt (unbefristet)',
     departments: ['Radio-Redaktion'],
     skillAssignments: [
@@ -141,6 +147,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
   {
     id: '7',
     name: 'Kristof Kien',
+    email: 'kristof.kien@swr.de',
     role: 'Festangestellt (unbefristet)',
     departments: ['Radio-Redaktion'],
     skillAssignments: [
@@ -165,6 +172,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
   {
     id: '8',
     name: 'Lisa Reister',
+    email: 'lisa.reister@swr.de',
     role: 'Frei (befristet)',
     departments: ['Radio-Redaktion'],
     skillAssignments: [
@@ -184,6 +192,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
   {
     id: '9',
     name: 'Dennis Tinat',
+    email: 'dennis.tinat@swr.de',
     role: 'Frei (unbefristet)',
     departments: ['Radio-Redaktion'],
     skillAssignments: [
@@ -198,6 +207,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
   {
     id: '10',
     name: 'Nicola Müntefering',
+    email: 'nicola.muentefering@swr.de',
     role: 'Frei (unbefristet)',
     departments: ['Radio-Redaktion'],
     skillAssignments: [{ skill: 'Mod NOW', percentage: 100, priority: 1 }],
@@ -209,6 +219,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
   {
     id: '11',
     name: 'Gregor Glöckner',
+    email: 'gregor.gloeckner@swr.de',
     role: 'Festangestellt (unbefristet)',
     departments: ['Radio-Redaktion'],
     skillAssignments: [
@@ -224,6 +235,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
   {
     id: '12',
     name: 'Sebastian Müller',
+    email: 'sebastian.mueller@swr.de',
     role: 'Frei (unbefristet)',
     departments: ['Radio-Redaktion'],
     skillAssignments: [{ skill: 'Mod PUSH', percentage: 100, priority: 1 }],
@@ -235,6 +247,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
   {
     id: '13',
     name: 'Markus Barsch',
+    email: 'markus.barsch@swr.de',
     role: 'Frei (unbefristet)',
     departments: ['Radio-Redaktion'],
     skillAssignments: [{ skill: 'Mod POP', percentage: 100, priority: 1 }],
@@ -246,6 +259,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
   {
     id: '14',
     name: 'Michael Reufstek',
+    email: 'michael.reufstek@swr.de',
     role: 'Frei (unbefristet)',
     departments: ['Radio-Redaktion'],
     skillAssignments: [{ skill: 'Mod POP', percentage: 100, priority: 1 }],
@@ -257,6 +271,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
   {
     id: '15',
     name: 'Constantin Zöller',
+    email: 'constantin.zoeller@swr.de',
     role: 'Frei (unbefristet)',
     departments: ['Radio-Redaktion'],
     skillAssignments: [{ skill: 'Mod Morningshow', percentage: 100, priority: 1 }],
@@ -268,6 +283,7 @@ export const INITIAL_EMPLOYEES: Employee[] = [
   {
     id: '16',
     name: 'Jessica Enzminger',
+    email: 'jessica.enzminger@swr.de',
     role: 'fest frei, befristet',
     departments: ['Radio-Redaktion'],
     skillAssignments: [
@@ -291,12 +307,12 @@ export const INITIAL_EMPLOYEES: Employee[] = [
 export const INITIAL_SKILL_GROUPS: SkillGroup[] = [
   {
     id: "g_layout_radio",
-    title: "Radio Layout",
+    title: "Layout",
     roles: [
-      { name: 'Radio-Layout', startTime: '08:00', endTime: '16:45', defaultPercentage: 100, defaultPriority: 1 },
-      { name: 'Digital-Layout', startTime: '08:00', endTime: '16:45', defaultPercentage: 100, defaultPriority: 1 },
-      { name: 'Musik-Layout', startTime: '08:00', endTime: '16:45', defaultPercentage: 100, defaultPriority: 1 },
-      { name: 'Käpt’n', startTime: '08:00', endTime: '16:45', defaultPercentage: 100, defaultPriority: 2 }
+      { name: 'Radio-Layout', startTime: '08:00', endTime: '16:45', defaultPercentage: 100, defaultPriority: 1, departments: ['Radio-Redaktion'] },
+      { name: 'Digital-Layout', startTime: '08:00', endTime: '16:45', defaultPercentage: 100, defaultPriority: 1, departments: ['Radio-Redaktion', 'Online-Redaktion'] },
+      { name: 'Musik-Layout', startTime: '08:00', endTime: '16:45', defaultPercentage: 100, defaultPriority: 1, departments: ['Radio-Redaktion'] },
+      { name: 'Käpt’n', startTime: '08:00', endTime: '16:45', defaultPercentage: 100, defaultPriority: 2, departments: ['Radio-Redaktion'] }
     ],
     departments: ['Radio-Redaktion', 'Online-Redaktion']
   },
@@ -304,16 +320,16 @@ export const INITIAL_SKILL_GROUPS: SkillGroup[] = [
     id: "g_news",
     title: "News & Aktuell",
     roles: [
-      { name: 'News 1', startTime: '04:30', endTime: '10:15', defaultPercentage: 100, defaultPriority: 1 },
-      { name: 'News 2', startTime: '09:45', endTime: '17:15', defaultPercentage: 100, defaultPriority: 1 },
-      { name: 'Wetter', startTime: '05:00', endTime: '12:00', defaultPercentage: 100, defaultPriority: 2 },
-      { name: 'Serviceteam/Verkehr', startTime: '05:30', endTime: '12:00', defaultPercentage: 100, defaultPriority: 2 },
-      { name: 'Aktuell Redakteur Nacht', startTime: '00:00', endTime: '05:00', defaultPercentage: 100, defaultPriority: 2 },
-      { name: 'Anchor 1', startTime: '06:00', endTime: '14:45', defaultPercentage: 100, defaultPriority: 2 },
-      { name: 'Anchor 2', startTime: '10:00', endTime: '18:45', defaultPercentage: 100, defaultPriority: 2 },
-      { name: 'Aktuell Redakteur Abend', startTime: '16:00', endTime: '00:00', defaultPercentage: 100, defaultPriority: 2 },
-      { name: 'Regio Ticker', startTime: '08:00', endTime: '16:45', defaultPercentage: 100, defaultPriority: 2 },
-      { name: 'Käpt’n Future', startTime: '08:30', endTime: '17:15', defaultPercentage: 100, defaultPriority: 3 }
+      { name: 'News 1', startTime: '04:30', endTime: '10:15', defaultPercentage: 100, defaultPriority: 1, departments: ['Radio-Redaktion'] },
+      { name: 'News 2', startTime: '09:45', endTime: '17:15', defaultPercentage: 100, defaultPriority: 1, departments: ['Radio-Redaktion'] },
+      { name: 'Wetter', startTime: '05:00', endTime: '12:00', defaultPercentage: 100, defaultPriority: 2, departments: ['Radio-Redaktion'] },
+      { name: 'Serviceteam/Verkehr', startTime: '05:30', endTime: '12:00', defaultPercentage: 100, defaultPriority: 2, departments: ['Radio-Redaktion'] },
+      { name: 'Aktuell Redakteur Nacht', startTime: '00:00', endTime: '05:00', defaultPercentage: 100, defaultPriority: 2, departments: ['Radio-Redaktion'] },
+      { name: 'Anchor 1', startTime: '06:00', endTime: '14:45', defaultPercentage: 100, defaultPriority: 2, departments: ['Radio-Redaktion'] },
+      { name: 'Anchor 2', startTime: '10:00', endTime: '18:45', defaultPercentage: 100, defaultPriority: 2, departments: ['Radio-Redaktion'] },
+      { name: 'Aktuell Redakteur Abend', startTime: '16:00', endTime: '00:00', defaultPercentage: 100, defaultPriority: 2, departments: ['Radio-Redaktion'] },
+      { name: 'Regio Ticker', startTime: '08:00', endTime: '16:45', defaultPercentage: 100, defaultPriority: 2, departments: ['Radio-Redaktion'] },
+      { name: 'Käpt’n Future', startTime: '08:30', endTime: '17:15', defaultPercentage: 100, defaultPriority: 3, departments: ['Radio-Redaktion'] }
     ],
     departments: ['Radio-Redaktion']
   },
@@ -321,8 +337,8 @@ export const INITIAL_SKILL_GROUPS: SkillGroup[] = [
     id: "g_morningshow_red",
     title: "Redaktion Morningshow",
     roles: [
-      { name: 'Redakteur 1 Morningshow', startTime: '08:30', endTime: '17:15', defaultPercentage: 100, defaultPriority: 2 },
-      { name: 'Redakteur 2 Morningshow', startTime: '09:30', endTime: '18:15', defaultPercentage: 100, defaultPriority: 2 }
+      { name: 'Redakteur 1 Morningshow', startTime: '08:30', endTime: '17:15', defaultPercentage: 100, defaultPriority: 2, departments: ['Radio-Redaktion'] },
+      { name: 'Redakteur 2 Morningshow', startTime: '09:30', endTime: '18:15', defaultPercentage: 100, defaultPriority: 2, departments: ['Radio-Redaktion'] }
     ],
     departments: ['Radio-Redaktion']
   },
@@ -330,18 +346,18 @@ export const INITIAL_SKILL_GROUPS: SkillGroup[] = [
     id: "g_moderation",
     title: "Moderation",
     roles: [
-      { name: 'Mod POPNACHT', startTime: '00:00', endTime: '05:00', defaultPercentage: 100, defaultPriority: 1 },
-      { name: 'Mod Morningshow', startTime: '04:30', endTime: '11:00', defaultPercentage: 100, defaultPriority: 1 },
-      { name: 'Co-Mod Morningshow', startTime: '04:30', endTime: '11:00', defaultPercentage: 100, defaultPriority: 1 },
-      { name: 'Producer Morningshow', startTime: '04:30', endTime: '10:30', defaultPercentage: 100, defaultPriority: 2 },
-      { name: 'Mod NOW', startTime: '07:30', endTime: '16:15', defaultPercentage: 100, defaultPriority: 1 },
-      { name: 'Redakteur NOW', startTime: '07:30', endTime: '16:15', defaultPercentage: 100, defaultPriority: 2 },
-      { name: 'Mod PUSH', startTime: '08:30', endTime: '17:15', defaultPercentage: 100, defaultPriority: 1 },
-      { name: 'Redakteur PUSH', startTime: '08:30', endTime: '17:15', defaultPercentage: 100, defaultPriority: 2 },
-      { name: 'Mod MOVE', startTime: '11:15', endTime: '20:00', defaultPercentage: 100, defaultPriority: 1 },
-      { name: 'Redakteur MOVE', startTime: '11:15', endTime: '20:00', defaultPercentage: 100, defaultPriority: 2 },
-      { name: 'Redakteur POP', startTime: '14:30', endTime: '23:15', defaultPercentage: 100, defaultPriority: 2 },
-      { name: 'Mod POP', startTime: '15:15', endTime: '00:00', defaultPercentage: 100, defaultPriority: 1 }
+      { name: 'Mod POPNACHT', startTime: '00:00', endTime: '05:00', defaultPercentage: 100, defaultPriority: 1, departments: ['Radio-Redaktion'] },
+      { name: 'Mod Morningshow', startTime: '04:30', endTime: '11:00', defaultPercentage: 100, defaultPriority: 1, departments: ['Radio-Redaktion'] },
+      { name: 'Co-Mod Morningshow', startTime: '04:30', endTime: '11:00', defaultPercentage: 100, defaultPriority: 1, departments: ['Radio-Redaktion'] },
+      { name: 'Producer Morningshow', startTime: '04:30', endTime: '10:30', defaultPercentage: 100, defaultPriority: 2, departments: ['Radio-Redaktion'] },
+      { name: 'Mod NOW', startTime: '07:30', endTime: '16:15', defaultPercentage: 100, defaultPriority: 1, departments: ['Radio-Redaktion'] },
+      { name: 'Redakteur NOW', startTime: '07:30', endTime: '16:15', defaultPercentage: 100, defaultPriority: 2, departments: ['Radio-Redaktion'] },
+      { name: 'Mod PUSH', startTime: '08:30', endTime: '17:15', defaultPercentage: 100, defaultPriority: 1, departments: ['Radio-Redaktion'] },
+      { name: 'Redakteur PUSH', startTime: '08:30', endTime: '17:15', defaultPercentage: 100, defaultPriority: 2, departments: ['Radio-Redaktion'] },
+      { name: 'Mod MOVE', startTime: '11:15', endTime: '20:00', defaultPercentage: 100, defaultPriority: 1, departments: ['Radio-Redaktion'] },
+      { name: 'Redakteur MOVE', startTime: '11:15', endTime: '20:00', defaultPercentage: 100, defaultPriority: 2, departments: ['Radio-Redaktion'] },
+      { name: 'Redakteur POP', startTime: '14:30', endTime: '23:15', defaultPercentage: 100, defaultPriority: 2, departments: ['Radio-Redaktion'] },
+      { name: 'Mod POP', startTime: '15:15', endTime: '00:00', defaultPercentage: 100, defaultPriority: 1, departments: ['Radio-Redaktion'] }
     ],
     departments: ['Radio-Redaktion']
   },
@@ -349,7 +365,7 @@ export const INITIAL_SKILL_GROUPS: SkillGroup[] = [
     id: "g_comedy",
     title: "Comedy",
     roles: [
-      { name: 'Redakteur Comedy', startTime: '09:00', endTime: '17:00', defaultPercentage: 100, defaultPriority: 2 }
+      { name: 'Redakteur Comedy', startTime: '09:00', endTime: '17:00', defaultPercentage: 100, defaultPriority: 2, departments: ['Radio-Redaktion'] }
     ],
     departments: ['Radio-Redaktion']
   },
@@ -357,11 +373,11 @@ export const INITIAL_SKILL_GROUPS: SkillGroup[] = [
     id: "g_regional",
     title: "Regional",
     roles: [
-      { name: 'Redakteur Stuttgart 1', startTime: '08:00', endTime: '16:45', defaultPercentage: 100, defaultPriority: 2 },
-      { name: 'Redakteur Stuttgart 2', startTime: '09:00', endTime: '17:45', defaultPercentage: 100, defaultPriority: 2 },
-      { name: 'Redakteur Mainz 1', startTime: '08:00', endTime: '16:45', defaultPercentage: 100, defaultPriority: 2 },
-      { name: 'Redakteur Mainz 2', startTime: '09:00', endTime: '17:45', defaultPercentage: 100, defaultPriority: 2 },
-      { name: 'Reporter Elchbus', startTime: '06:00', endTime: '18:00', defaultPercentage: 100, defaultPriority: 2 }
+      { name: 'Redakteur Stuttgart 1', startTime: '08:00', endTime: '16:45', defaultPercentage: 100, defaultPriority: 2, departments: ['Radio-Redaktion'] },
+      { name: 'Redakteur Stuttgart 2', startTime: '09:00', endTime: '17:45', defaultPercentage: 100, defaultPriority: 2, departments: ['Radio-Redaktion'] },
+      { name: 'Redakteur Mainz 1', startTime: '08:00', endTime: '16:45', defaultPercentage: 100, defaultPriority: 2, departments: ['Radio-Redaktion'] },
+      { name: 'Redakteur Mainz 2', startTime: '09:00', endTime: '17:45', defaultPercentage: 100, defaultPriority: 2, departments: ['Radio-Redaktion'] },
+      { name: 'Reporter Elchbus', startTime: '06:00', endTime: '18:00', defaultPercentage: 100, defaultPriority: 2, departments: ['Radio-Redaktion'] }
     ],
     departments: ['Radio-Redaktion']
   },
@@ -369,9 +385,9 @@ export const INITIAL_SKILL_GROUPS: SkillGroup[] = [
     id: "g_design_pa",
     title: "Programmaktion & Design",
     roles: [
-      { name: 'Programmdesign', startTime: '08:00', endTime: '17:00', defaultPercentage: 100, defaultPriority: 2 },
-      { name: 'Redakteur 1 PA', startTime: '09:00', endTime: '17:15', defaultPercentage: 100, defaultPriority: 2 },
-      { name: 'Redakteur 2 PA', startTime: '09:00', endTime: '17:15', defaultPercentage: 100, defaultPriority: 2 }
+      { name: 'Programmdesign', startTime: '08:00', endTime: '17:00', defaultPercentage: 100, defaultPriority: 2, departments: ['Radio-Redaktion'] },
+      { name: 'Redakteur 1 PA', startTime: '09:00', endTime: '17:15', defaultPercentage: 100, defaultPriority: 2, departments: ['Radio-Redaktion'] },
+      { name: 'Redakteur 2 PA', startTime: '09:00', endTime: '17:15', defaultPercentage: 100, defaultPriority: 2, departments: ['Radio-Redaktion'] }
     ],
     departments: ['Radio-Redaktion', 'Sounddesign']
   },
@@ -379,8 +395,8 @@ export const INITIAL_SKILL_GROUPS: SkillGroup[] = [
     id: "g_sonstige",
     title: "Sonstige",
     roles: [
-      { name: 'Sonstige Dienste', startTime: '08:00', endTime: '17:00', defaultPercentage: 100, defaultPriority: 3 },
-      { name: 'Qualitätsmanagement', startTime: '09:00', endTime: '17:00', defaultPercentage: 100, defaultPriority: 2 }
+      { name: 'Sonstige Dienste', startTime: '08:00', endTime: '17:00', defaultPercentage: 100, defaultPriority: 3, departments: ['Radio-Redaktion'] },
+      { name: 'Qualitätsmanagement', startTime: '09:00', endTime: '17:00', defaultPercentage: 100, defaultPriority: 2, departments: ['Radio-Redaktion'] }
     ],
     departments: ['Radio-Redaktion', 'Online-Redaktion', 'Sounddesign']
   }

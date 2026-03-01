@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { startOfWeek, addDays, format, parseISO, subWeeks, addWeeks, getISOWeek } from 'date-fns';
 import { Employee, Shift, SkillGroup, RoleDefinition, Redaktion, SkillAssignment, ShiftTypeID } from '../types';
-import { INITIAL_EMPLOYEES, INITIAL_SKILL_GROUPS, VERTRAGS_OPTIONEN } from '../constants';
+import { INITIAL_EMPLOYEES, INITIAL_SKILL_GROUPS, VERTRAGS_OPTIONEN, REDAKTIONS_OPTIONEN } from '../constants';
 import { autoScheduleShifts } from '../services/geminiService';
 import { generateId, validatePercentageSum } from '../utils/dashboardUtils';
 
@@ -26,13 +26,31 @@ interface CancelConfirmation {
     onConfirm: () => void;
 }
 
+const STORAGE_KEY_SHIFTS = 'mahamez_shifts';
+const STORAGE_KEY_PUBLISHED = 'mahamez_published_shifts';
+
 export const usePlannerDashboard = () => {
     const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
-    const [shifts, setShifts] = useState<Shift[]>([]);
+    
+    // Load shifts from localStorage
+    const [shifts, setShifts] = useState<Shift[]>(() => {
+        const saved = localStorage.getItem(STORAGE_KEY_SHIFTS);
+        return saved ? JSON.parse(saved) : [];
+    });
+
+    // Load published shifts from localStorage
+    const [publishedShifts, setPublishedShifts] = useState<Shift[]>(() => {
+        const saved = localStorage.getItem(STORAGE_KEY_PUBLISHED);
+        return saved ? JSON.parse(saved) : [];
+    });
+
     const [skillGroups, setSkillGroups] = useState<SkillGroup[]>(INITIAL_SKILL_GROUPS);
+    const [redaktionen, setRedaktionen] = useState<Redaktion[]>(REDAKTIONS_OPTIONEN);
     const [currentWeek, setCurrentWeek] = useState<Date>(startOfWeek(new Date(), { weekStartsOn: 1 }));
     const [isAiLoading, setIsAiLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState<'calendar' | 'employees' | 'roles' | 'stats' | 'rules' | 'new-plan'>('calendar');
+    const [activeTab, setActiveTab] = useState<'calendar' | 'employees' | 'roles' | 'stats' | 'rules' | 'new-plan' | 'my-shifts' | 'my-availability'>('calendar');
+
+    const [hasUnpublishedChanges, setHasUnpublishedChanges] = useState(false);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -62,19 +80,57 @@ export const usePlannerDashboard = () => {
 
     const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(currentWeek, i)), [currentWeek]);
 
+    // Sync shifts to localStorage
+    useEffect(() => {
+        localStorage.setItem(STORAGE_KEY_SHIFTS, JSON.stringify(shifts));
+        
+        // Check if current week's shifts differ from published shifts
+        const startStr = format(weekDays[0], 'yyyy-MM-dd');
+        const endStr = format(weekDays[6], 'yyyy-MM-dd');
+        
+        const currentWeekShifts = shifts.filter(s => s.date >= startStr && s.date <= endStr);
+        const currentWeekPublished = publishedShifts.filter(s => s.date >= startStr && s.date <= endStr);
+        
+        // Simple comparison: check if lengths match and all shifts are identical
+        const isDifferent = currentWeekShifts.length !== currentWeekPublished.length || 
+            currentWeekShifts.some(s => {
+                const pub = currentWeekPublished.find(p => p.id === s.id);
+                return !pub || pub.employeeId !== s.employeeId || pub.date !== s.date || pub.roleName !== s.roleName;
+            });
+            
+        setHasUnpublishedChanges(isDifferent);
+    }, [shifts, publishedShifts, weekDays]);
+
+    const handlePublish = useCallback(() => {
+        const startStr = format(weekDays[0], 'yyyy-MM-dd');
+        const endStr = format(weekDays[6], 'yyyy-MM-dd');
+        
+        // Replace published shifts for this week with current shifts
+        const otherWeeksPublished = publishedShifts.filter(s => s.date < startStr || s.date > endStr);
+        const currentWeekShifts = shifts.filter(s => s.date >= startStr && s.date <= endStr);
+        
+        const newPublished = [...otherWeeksPublished, ...currentWeekShifts];
+        setPublishedShifts(newPublished);
+        localStorage.setItem(STORAGE_KEY_PUBLISHED, JSON.stringify(newPublished));
+        setHasUnpublishedChanges(false);
+    }, [shifts, publishedShifts, weekDays]);
+
     useEffect(() => {
         if (deleteConf.isOpen) {
-            setDeleteTimer(3);
+            const skipTimer = activeTab === 'new-plan' && deleteConf.type === 'shift';
+            setDeleteTimer(skipTimer ? 0 : 3);
             if (timerRef.current) clearInterval(timerRef.current);
-            timerRef.current = window.setInterval(() => {
-                setDeleteTimer((prev) => {
-                    if (prev <= 1) {
-                        if (timerRef.current) clearInterval(timerRef.current);
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
+            if (!skipTimer) {
+                timerRef.current = window.setInterval(() => {
+                    setDeleteTimer((prev) => {
+                        if (prev <= 1) {
+                            if (timerRef.current) clearInterval(timerRef.current);
+                            return 0;
+                        }
+                        return prev - 1;
+                    });
+                }, 1000);
+            }
         } else {
             if (timerRef.current) clearInterval(timerRef.current);
         }
@@ -133,6 +189,14 @@ export const usePlannerDashboard = () => {
         const emp = employees.find(e => e.id === shift?.employeeId);
         setDeleteConf({ isOpen: true, type: 'shift', id, name: `${emp?.name || 'Mitarbeiter'} als ${shift?.roleName || 'Schicht'}` });
     }, [shifts, employees]);
+
+    const handleDeleteRole = useCallback((groupId: string, roleName: string) => {
+        setDeleteConf({ isOpen: true, type: 'role', id: `${groupId}|${roleName}`, name: `Rolle "${roleName}"` });
+    }, []);
+
+    const handleDeleteGroup = useCallback((groupId: string, groupTitle: string) => {
+        setDeleteConf({ isOpen: true, type: 'group', id: groupId, name: `Gruppe "${groupTitle}"` });
+    }, []);
 
     const handleDeleteEmployee = useCallback((emp: Employee) => {
         setDeleteConf({ isOpen: true, type: 'employee', id: emp.id, name: emp.name });
@@ -219,7 +283,7 @@ export const usePlannerDashboard = () => {
     const handleCloseDeleteConf = useCallback(() => setDeleteConf(prev => ({ ...prev, isOpen: false })), []);
 
     const handleExport = useCallback(() => {
-        const data = { week: format(currentWeek, 'yyyy-ww'), shifts, employees: employees.map(e => ({ id: e.id, name: e.name })) };
+        const data = { week: format(currentWeek, "yyyy-'W'II"), shifts, employees: employees.map(e => ({ id: e.id, name: e.name })) };
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -242,22 +306,60 @@ export const usePlannerDashboard = () => {
     }, []);
 
     const filteredSkillGroups = useMemo(() => {
-        if (selectedDept === 'Moderation') return skillGroups.filter(g => g.id === 'g_moderation');
-        if (selectedDept === 'Onlineredaktion') return skillGroups.filter(g => g.departments.includes('Online-Redaktion'));
-        return skillGroups.filter(g => g.departments.includes('Radio-Redaktion') && g.id !== 'g_moderation');
+        let filtered = skillGroups;
+        if (selectedDept === 'Moderation') {
+            filtered = skillGroups.filter(g => g.id === 'g_moderation');
+        } else if (selectedDept === 'Onlineredaktion') {
+            filtered = skillGroups.filter(g => 
+                g.departments.includes('Online-Redaktion') || 
+                g.roles.some(r => r.departments?.includes('Online-Redaktion'))
+            );
+        } else {
+            filtered = skillGroups.filter(g => 
+                (g.departments.includes('Radio-Redaktion') && g.id !== 'g_moderation') ||
+                g.roles.some(r => r.departments?.includes('Radio-Redaktion'))
+            );
+        }
+
+        // Also filter the roles within the groups to only show those belonging to the department
+        return filtered.map(g => ({
+            ...g,
+            roles: g.roles.filter(r => {
+                if (selectedDept === 'Moderation') return true;
+                const deptKey = selectedDept === 'Onlineredaktion' ? 'Online-Redaktion' : 'Radio-Redaktion';
+                return r.departments?.includes(deptKey) || g.departments.includes(deptKey);
+            })
+        })).filter(g => g.roles.length > 0);
     }, [skillGroups, selectedDept]);
+
+    const rolesTabSkillGroups = useMemo(() => {
+        if (roleTabFilters.length === 0) return skillGroups;
+        
+        return skillGroups.map(g => {
+            const matchesGroup = g.departments.some(d => roleTabFilters.includes(d));
+            const filteredRoles = g.roles.filter(r => 
+                r.departments?.some(d => roleTabFilters.includes(d)) || matchesGroup
+            );
+            
+            if (filteredRoles.length > 0 || matchesGroup) {
+                return { ...g, roles: filteredRoles };
+            }
+            return null;
+        }).filter((g): g is SkillGroup => g !== null);
+    }, [skillGroups, roleTabFilters]);
 
     const allRolesWithShadowing = useMemo(() => {
         const temp: (RoleDefinition & { groupId: string; isShadowing?: boolean; originalRoleName: string; hasThickBorder?: boolean })[] = [];
-        const special = ['Käpt’n', 'Käpt’n Future', 'Redakteur 2 Morningshow', 'Redakteur Mainz 2', 'Redakteur 2 PA', 'Qualitätsmanagement'];
-        filteredSkillGroups.forEach(g => g.roles.forEach(r => {
-            const active = shadowingRows.has(r.name);
-            temp.push({ ...r, groupId: g.id, isShadowing: false, originalRoleName: r.name });
-            if (active) temp.push({ ...r, name: `Mitlaufen ${r.name}`, isShadowing: true, groupId: g.id, originalRoleName: r.name });
-        }));
+        filteredSkillGroups.forEach(g => {
+            g.roles.forEach((r, rIdx) => {
+                const active = shadowingRows.has(r.name);
+                temp.push({ ...r, groupId: g.id, isShadowing: false, originalRoleName: r.name });
+                if (active) temp.push({ ...r, name: `Mitlaufen ${r.name}`, isShadowing: true, groupId: g.id, originalRoleName: r.name });
+            });
+        });
         return temp.map((r, i, arr) => {
-            const prev = arr[i - 1];
-            const thick = prev && special.includes(prev.originalRoleName) && (!prev.isShadowing ? !shadowingRows.has(prev.originalRoleName) : true);
+            const next = arr[i + 1];
+            const thick = next && next.groupId !== r.groupId;
             return { ...r, hasThickBorder: thick };
         });
     }, [filteredSkillGroups, shadowingRows]);
@@ -283,6 +385,16 @@ export const usePlannerDashboard = () => {
         })));
     }, []);
 
+    const handleReorderRoleInGroup = useCallback((groupId: string, fromIdx: number, toIdx: number) => {
+        setSkillGroups(prev => prev.map(g => {
+            if (g.id !== groupId) return g;
+            const roles = [...g.roles];
+            const [removed] = roles.splice(fromIdx, 1);
+            roles.splice(toIdx, 0, removed);
+            return { ...g, roles };
+        }));
+    }, []);
+
     const handleReorderRoles = useCallback((fromIdx: number, toIdx: number) => {
         setSkillGroups(prev => {
             // Build the same flat mapping that allRolesWithShadowing uses (non-shadowing rows only)
@@ -302,10 +414,21 @@ export const usePlannerDashboard = () => {
         });
     }, []);
 
+    const handleAddRedaktion = useCallback((name: string) => {
+        if (!name || redaktionen.includes(name)) return;
+        setRedaktionen(prev => [...prev, name]);
+    }, [redaktionen]);
+
+    const handleDeleteRedaktion = useCallback((name: string) => {
+        setRedaktionen(prev => prev.filter(r => r !== name));
+    }, []);
+
     return {
         employees, setEmployees,
         shifts, setShifts,
         skillGroups, setSkillGroups,
+        redaktionen, setRedaktionen,
+        handleAddRedaktion, handleDeleteRedaktion,
         currentWeek, weekDays,
         isAiLoading,
         activeTab, setActiveTab,
@@ -320,13 +443,15 @@ export const usePlannerDashboard = () => {
         deleteConf, deleteTimer,
         roleTabFilters, selectedDept, setSelectedDept,
         shadowingRows, allRolesWithShadowing,
-        filteredSkillGroups, // exported so PlannerDashboard doesn't need its own duplicate memo
+        filteredSkillGroups, rolesTabSkillGroups,
         activeNotifications, notificationsHistory,
         markAsRead, markAllAsRead,
         handleAiOptimize, addManualShift, deleteShift,
+        handleDeleteRole, handleDeleteGroup,
         handleOpenAddModal, handleOpenEditModal, handleSaveEmployee,
         confirmDeleteAction, handleCloseModal, handlePreviousWeek, handleNextWeek,
         handleCloseDeleteConf, handleExport, toggleShadowing, toggleDepartmentFilter,
-        handleDeleteEmployee, handleAddRow, handleReorderRoles, handleEditRow
+        handleDeleteEmployee, handleAddRow, handleReorderRoles, handleEditRow, handleReorderRoleInGroup,
+        publishedShifts, hasUnpublishedChanges, handlePublish
     };
 };
