@@ -79,3 +79,11 @@ export interface SkillGroup {
   roles: RoleDefinition[];
   departments: Redaktion[];
 }
+
+export interface CalendarEvent {
+  id: string;
+  name: string;
+  startDate: string; // YYYY-MM-DD
+  endDate: string;   // YYYY-MM-DD
+  planIds: string[]; // which Dienstplan IDs this event applies to; empty = all
+}

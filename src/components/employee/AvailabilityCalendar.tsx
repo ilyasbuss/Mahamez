@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isSameDay, isWeekend, startOfWeek, endOfWeek, addDays, getISOWeek } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Ban, Clock, X, Plus, AlertCircle, Plane, MessageSquare, Trash2 } from 'lucide-react';
-import { PartialAvailability, AvailabilityStatus } from '../../types';
+import { ChevronLeft, ChevronRight, Ban, Clock, X, Plus, AlertCircle, Plane, MessageSquare, Trash2, CheckCircle2, Loader2 } from 'lucide-react';
+import { PartialAvailability, AvailabilityStatus, CalendarEvent } from '../../types';
 import { holidayService, Holiday } from '../../services/HolidayService';
 import { schoolHolidayService, SchoolHoliday } from '../../services/SchoolHolidayService';
+import DatePickerPopup from './DatePickerPopup';
 
 interface AvailabilityCalendarProps {
     currentMonth: Date;
@@ -12,6 +13,10 @@ interface AvailabilityCalendarProps {
     onMonthJump: (date: Date) => void;
     availability: Map<string, PartialAvailability>;
     onAvailabilityChange: (date: string, availability: PartialAvailability | null) => void;
+    isSaving?: boolean;
+    lastSaved?: Date | null;
+    events?: CalendarEvent[];
+    currentPlanId?: string;
 }
 
 const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
@@ -19,7 +24,11 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
     onMonthChange,
     onMonthJump,
     availability,
-    onAvailabilityChange
+    onAvailabilityChange,
+    isSaving,
+    lastSaved,
+    events = [],
+    currentPlanId,
 }) => {
     const [editingDate, setEditingDate] = useState<string | null>(null);
     const [tempStatus, setTempStatus] = useState<AvailabilityStatus>('available');
@@ -231,11 +240,21 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
         monthOptions.push(monthDate);
     }
 
+    // Convert HH:MM time to percentage (0–100) along 48 half-hour slots.
+    // Visual rounding to nearest half hour; exact time still shown as text.
+    const timeToPercent = (time: string): number => {
+        const [hStr, mStr] = time.split(':');
+        const h = parseInt(hStr, 10) || 0;
+        const m = parseInt(mStr, 10) || 0;
+        const slot = Math.round((h * 60 + m) / 30);
+        return Math.min(Math.max((slot / 48) * 100, 0), 100);
+    };
+
     return (
         <>
             <div className="bg-white rounded-3xl shadow-sm border overflow-hidden">
                 {/* Calendar Header */}
-                <div className="p-4 border-b flex items-center gap-4">
+                <div className="p-4 border-b flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1 bg-slate-50/50 p-1 rounded-xl border border-slate-100/50">
                             <button
@@ -254,6 +273,8 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                     value={format(currentMonth, 'yyyy-MM')}
                                     onChange={(e) => onMonthJump(new Date(e.target.value + '-01'))}
                                     className="pl-2 pr-5 py-1 text-base font-bold text-slate-800 bg-transparent focus:outline-none rounded-lg cursor-pointer capitalize appearance-none transition-all duration-200"
+                                    size={1}
+                                    style={{ maxHeight: '50vh' }}
                                 >
                                     {monthOptions.map((month) => (
                                         <option key={format(month, 'yyyy-MM')} value={format(month, 'yyyy-MM')}>
@@ -278,7 +299,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                             </button>
                         </div>
 
-                        {/* Bulk Blocking Button */}
+                        {/* Bulk Blocking Button — original design */}
                         <button
                             onClick={() => setIsBulkBlockingOpen(true)}
                             className="p-1.5 bg-purple-50 hover:bg-purple-100 text-[#4B2C82] rounded-lg transition flex items-center gap-1.5 px-3"
@@ -287,6 +308,25 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                             <Plus size={16} />
                             <span className="text-sm font-bold">Zeitraum blocken</span>
                         </button>
+                    </div>
+
+                    {/* Autosave indicator — original design */}
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg">
+                        {isSaving ? (
+                            <>
+                                <Loader2 size={13} className="text-[#4B2C82] animate-spin" />
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Speichere...</span>
+                            </>
+                        ) : (
+                            <>
+                                <CheckCircle2 size={13} className="text-emerald-500" />
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                    {lastSaved
+                                        ? `Gespeichert ${lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                                        : 'Alle Änderungen übernommen'}
+                                </span>
+                            </>
+                        )}
                     </div>
                 </div>
 
@@ -324,18 +364,22 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                             const prevAvail = availability.get(prevDayStr);
                             const nextAvail = availability.get(nextDayStr);
 
-                            const isPrevInBlock = !isMonday && isUnavailable && prevAvail && prevAvail.status === avail.status && (day >= monthStart && addDays(day, -1) >= monthStart);
-                            const isNextInBlock = !isSunday && isUnavailable && nextAvail && nextAvail.status === avail.status && (day <= monthEnd && addDays(day, 1) <= monthEnd);
+                            // Block adjacency: connect only when time boundaries are continuous at midnight
+                            // LEFT ends at 24:00: unavailable_full or unavailable_from (goes until end of day)
+                            // RIGHT starts at 00:00: unavailable_full or unavailable_until (starts at beginning of day)
+                            const leftEndsAtMidnight = (s?: string) => s === 'unavailable_full' || s === 'unavailable_from';
+                            const rightStartsAtMidnight = (s?: string) => s === 'unavailable_full' || s === 'unavailable_until';
+                            const isPrevInBlock = !isMonday && isUnavailable && !!prevAvail && leftEndsAtMidnight(prevAvail.status) && rightStartsAtMidnight(avail!.status) && avail!.status !== 'vacation' && prevAvail.status !== 'vacation' && addDays(day, -1) >= monthStart;
+                            const isNextInBlock = !isSunday && isUnavailable && !!nextAvail && leftEndsAtMidnight(avail!.status) && rightStartsAtMidnight(nextAvail.status) && avail!.status !== 'vacation' && nextAvail.status !== 'vacation' && addDays(day, 1) <= monthEnd;
 
                             return (
                                 <button
                                     key={dateStr}
-                                    onClick={() => isCurrentMonth && handleDayClick(day)}
+                                    onClick={() => handleDayClick(day)}
                                     draggable={isCurrentMonth && isUnavailable}
                                     onDragStart={(e) => {
                                         if (isCurrentMonth && avail) {
                                             setDraggedAvailability(avail);
-                                            // Set a transparent drag image to not obscure the cursor too much
                                             const ghost = document.createElement('div');
                                             ghost.style.opacity = '0';
                                             document.body.appendChild(ghost);
@@ -356,75 +400,130 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                             setDraggedAvailability(null);
                                         }
                                     }}
-                                    disabled={!isCurrentMonth}
                                     className={`
                                         relative flex flex-col items-center border transition-all duration-200 py-4 px-2 min-h-[90px] rounded-xl
-                                        ${!isCurrentMonth ? 'opacity-40 cursor-not-allowed bg-slate-50/30 border-slate-200/60' : ''}
+                                        ${!isCurrentMonth ? 'opacity-40 bg-slate-50/30 border-slate-200/60 hover:opacity-60' : ''}
                                         ${isCurrentMonth && isUnavailable && avail!.status === 'unavailable_full'
                                             ? 'border-red-300 bg-red-50/80'
                                             : isCurrentMonth && isUnavailable && avail!.status === 'vacation'
                                                 ? 'border-blue-300 bg-blue-50/80'
-                                                : isCurrentMonth && holidayData
-                                                    ? 'bg-gradient-to-br from-amber-50 to-orange-100 border-orange-400/60 shadow-sm z-10'
-                                                    : isCurrentMonth && isSchool
-                                                        ? 'bg-orange-50/50 border-slate-200'
-                                                        : isCurrentMonth && isWknd
-                                                            ? 'bg-purple-50 border-purple-200'
-                                                            : isCurrentMonth
-                                                                ? 'bg-white border-slate-200 hover:border-purple-300 hover:shadow-md z-10'
-                                                                : ''
+                                                : isCurrentMonth && isUnavailable && (avail!.status === 'unavailable_from' || avail!.status === 'unavailable_until')
+                                                    ? 'border-red-300 bg-white'
+                                                    : isCurrentMonth && holidayData
+                                                        ? 'bg-amber-50 border-orange-400/60 shadow-sm z-10'
+                                                        : isCurrentMonth && isSchool
+                                                            ? 'bg-orange-50/50 border-slate-200'
+                                                            : isCurrentMonth && isWknd
+                                                                ? 'bg-purple-50 border-purple-200'
+                                                                : isCurrentMonth
+                                                                    ? 'bg-white border-slate-200 hover:border-purple-300 hover:shadow-md z-10'
+                                                                    : ''
                                         }
                                         ${isUnavailable ? 'z-10' : 'z-20'}
                                     `}
                                 >
+                                    {/* Partial time coloring overlay — #fcf4f4 = same shade as full-day */}
+                                    {isUnavailable && avail && avail.status === 'unavailable_from' && avail.time && (() => {
+                                        const pct = timeToPercent(avail.time);
+                                        return (
+                                            <div
+                                                className="absolute inset-0 pointer-events-none z-[1] rounded-xl"
+                                                style={{ background: `linear-gradient(to right, transparent ${pct}%, #fcf4f4 ${pct}%)` }}
+                                            />
+                                        );
+                                    })()}
+                                    {isUnavailable && avail && avail.status === 'unavailable_until' && avail.time && (() => {
+                                        const pct = timeToPercent(avail.time);
+                                        return (
+                                            <div
+                                                className="absolute inset-0 pointer-events-none z-[1] rounded-xl"
+                                                style={{ background: `linear-gradient(to right, #fcf4f4 ${pct}%, transparent ${pct}%)` }}
+                                            />
+                                        );
+                                    })()}
+
                                     {/* Merged Background Overlay (Backdrop) */}
                                     {isUnavailable && isCurrentMonth && (
                                         <>
                                             {isPrevInBlock && (
-                                                <div className={`absolute top-3 bottom-3 -left-[7px] w-[7px] z-[-1] ${avail!.status === 'vacation' ? 'bg-blue-50/80 shadow-inner' : 'bg-red-50/80 shadow-inner'}`} />
+                                                <div className={`absolute top-3 bottom-3 -left-[7px] w-[7px] z-[-1] ${avail!.status === 'vacation' ? 'bg-blue-50/80' : 'bg-red-50/80'}`} />
                                             )}
                                             {isNextInBlock && (
-                                                <div className={`absolute top-3 bottom-3 -right-[7px] w-[7px] z-[-1] ${avail!.status === 'vacation' ? 'bg-blue-50/80 shadow-inner' : 'bg-red-50/80 shadow-inner'}`} />
+                                                <div className={`absolute top-3 bottom-3 -right-[7px] w-[7px] z-[-1] ${avail!.status === 'vacation' ? 'bg-blue-50/80' : 'bg-red-50/80'}`} />
                                             )}
                                         </>
                                     )}
 
-                                    {/* Monday KW Banner */}
-                                    {isMonday && isCurrentMonth && (
-                                        <div className="absolute top-0 left-0 bg-[#1D0B40] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-br-lg shadow-sm z-20">
-                                            KW {getISOWeek(day)}
-                                        </div>
-                                    )}
+                                    {/* Event band — runs across top of cell like KW badge */}
+                                    {isCurrentMonth && (() => {
+                                        const activeEvents = events.filter(ev =>
+                                            (ev.planIds.length === 0 || (currentPlanId && ev.planIds.includes(currentPlanId))) &&
+                                            dateStr >= ev.startDate && dateStr <= ev.endDate
+                                        );
+                                        if (activeEvents.length === 0) return null;
+                                        const ev = activeEvents[0];
+                                        const isFirst = ev.startDate === dateStr;
+                                        const isLast = ev.endDate === dateStr;
+                                        const nextDayIsEvent = !isLast;
+                                        return (
+                                            <div
+                                                className={`absolute top-0 left-0 right-0 h-[18px] bg-[#4B2C82] flex items-center justify-center z-[25] overflow-visible ${isFirst ? 'rounded-tl-xl' : '-left-[7px] pl-[7px]'
+                                                    } ${isLast ? 'rounded-tr-xl' : '-right-[7px] pr-[7px]'
+                                                    }`}
+                                                style={{
+                                                    left: isFirst ? 0 : '-7px',
+                                                    right: isLast ? 0 : '-7px',
+                                                }}
+                                            >
+                                                {isFirst && (
+                                                    <span className="text-[8px] font-bold text-white/90 truncate px-1">{ev.name}</span>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
 
-                                    {/* Holiday Name - Centered */}
+                                    {/* Monday KW Banner — pushed down if event band present */}
+                                    {isMonday && isCurrentMonth && (() => {
+                                        const hasEvent = events.some(ev =>
+                                            (ev.planIds.length === 0 || (currentPlanId && ev.planIds.includes(currentPlanId))) &&
+                                            dateStr >= ev.startDate && dateStr <= ev.endDate
+                                        );
+                                        return (
+                                            <div className={`absolute ${hasEvent ? 'top-[18px]' : 'top-0'} left-0 bg-[#1D0B40] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-br-lg shadow-sm z-20`}>
+                                                KW {getISOWeek(day)}
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* Holiday Name — anchored bottom-left above day number */}
                                     {holidayData && isCurrentMonth && (
-                                        <div className="absolute inset-0 flex items-center justify-center p-2 z-10">
-                                            <span className="text-[10px] font-bold text-orange-800/80 text-center leading-tight line-clamp-2">
+                                        <div className="absolute bottom-7 left-2 right-2 z-10">
+                                            <span className="text-[9px] font-bold text-orange-800/80 leading-tight line-clamp-2 block">
                                                 {holidayData.name}
                                             </span>
                                         </div>
                                     )}
 
                                     {/* Large centered Ban icon for full-day absence */}
-                                    {isUnavailable && avail && avail.status === 'unavailable_full' && isCurrentMonth && (
+                                    {isUnavailable && avail && avail.status === 'unavailable_full' && (
                                         <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-                                            <Ban size={48} className="text-red-500 opacity-80" strokeWidth={1.5} />
+                                            <Ban size={isCurrentMonth ? 48 : 28} className="text-red-500 opacity-80" strokeWidth={1.5} />
                                         </div>
                                     )}
 
                                     {/* Large centered Plane icon for vacation */}
-                                    {isUnavailable && avail && avail.status === 'vacation' && isCurrentMonth && (
+                                    {isUnavailable && avail && avail.status === 'vacation' && (
                                         <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-                                            <Plane size={48} className="text-blue-500 opacity-80" strokeWidth={1.5} />
+                                            <Plane size={isCurrentMonth ? 48 : 28} className="text-blue-500 opacity-80" strokeWidth={1.5} />
                                         </div>
                                     )}
 
                                     {/* Hourly status (small, with time) */}
                                     {isUnavailable && avail && (avail.status === 'unavailable_from' || avail.status === 'unavailable_until') && (
                                         <div className="absolute bottom-7 left-1/2 -translate-x-1/2 flex flex-col items-center z-10">
-                                            <Clock size={16} className="opacity-60 text-slate-600" />
+                                            <Clock size={isCurrentMonth ? 16 : 12} className="text-red-400" />
                                             {avail.time && (
-                                                <span className="text-[10px] font-bold mt-0.5 text-slate-600">{avail.time}</span>
+                                                <span className={`font-bold mt-0.5 text-slate-600 ${isCurrentMonth ? 'text-[11px]' : 'text-[9px]'}`}>{avail.time}</span>
                                             )}
                                         </div>
                                     )}
@@ -736,139 +835,150 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                 </button>
                             </div>
 
-                            <div className="space-y-4">
-                                {/* Date Range */}
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
-                                            Von
-                                        </label>
-                                        <input
-                                            type="date"
-                                            value={bulkStartDate}
-                                            onChange={(e) => setBulkStartDate(e.target.value)}
-                                            className="w-full border-2 border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-[#4B2C82] bg-slate-50 font-medium"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
-                                            Bis
-                                        </label>
-                                        <input
-                                            type="date"
-                                            value={bulkEndDate}
-                                            onChange={(e) => setBulkEndDate(e.target.value)}
-                                            className="w-full border-2 border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-[#4B2C82] bg-slate-50 font-medium"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* First Day Options */}
+                            <div className="space-y-5">
+                                {/* Von + Erster Tag */}
                                 <div>
-                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
-                                        Erster Tag
-                                    </label>
-                                    <div className="space-y-2">
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                checked={bulkFirstDayType === 'full'}
-                                                onChange={() => setBulkFirstDayType('full')}
-                                                className="w-4 h-4"
-                                            />
-                                            <span className="text-sm font-medium">Ganzer Tag</span>
-                                        </label>
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                checked={bulkFirstDayType === 'from'}
-                                                onChange={() => setBulkFirstDayType('from')}
-                                                className="w-4 h-4"
-                                            />
-                                            <span className="text-sm font-medium">Abwesend ab</span>
-                                            {bulkFirstDayType === 'from' && (
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Von</label>
+                                    <DatePickerPopup
+                                        value={bulkStartDate}
+                                        onChange={setBulkStartDate}
+                                        placeholder="Startdatum wählen"
+                                    />
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Erster Tag</label>
+                                    <div className="space-y-3">
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => setBulkFirstDayType('full')}
+                                                className={`flex-1 text-left px-4 py-3 rounded-xl border-2 transition-all font-bold text-[15px] ${bulkFirstDayType === 'full'
+                                                    ? 'border-[#4B2C82] bg-purple-50/50 text-[#4B2C82]'
+                                                    : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'
+                                                    }`}
+                                            >
+                                                Ganzer Tag
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => setBulkFirstDayType('from')}
+                                                className={`flex-1 text-left px-4 py-3 rounded-xl border-2 transition-all font-bold text-[15px] ${bulkFirstDayType === 'from'
+                                                    ? 'border-[#4B2C82] bg-purple-50/50 text-[#4B2C82]'
+                                                    : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'
+                                                    }`}
+                                            >
+                                                Abwesend ab
+                                            </button>
+                                            <div className={`rounded-xl border-2 transition-all flex items-center w-[90px] ${bulkFirstDayType === 'from' ? 'border-[#4B2C82] bg-purple-50/50' : 'border-slate-100 bg-slate-50'
+                                                }`}>
                                                 <input
-                                                    type="text"
-                                                    placeholder="HH:MM"
+                                                    type="time"
                                                     value={bulkFirstDayTime}
-                                                    onChange={(e) => setBulkFirstDayTime(e.target.value)}
-                                                    className="ml-2 border-2 border-slate-200 rounded-lg px-2 py-1 text-sm outline-none focus:border-[#4B2C82]"
+                                                    placeholder="--:--"
+                                                    onChange={(e) => {
+                                                        setBulkFirstDayTime(e.target.value);
+                                                        if (e.target.value) setBulkFirstDayType('from');
+                                                    }}
+                                                    className="w-full bg-transparent px-2 py-2.5 outline-none font-bold text-sm text-slate-600 cursor-pointer text-center"
                                                 />
-                                            )}
-                                        </label>
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                checked={bulkFirstDayType === 'until'}
-                                                onChange={() => setBulkFirstDayType('until')}
-                                                className="w-4 h-4"
-                                            />
-                                            <span className="text-sm font-medium">Abwesend bis</span>
-                                            {bulkFirstDayType === 'until' && (
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => setBulkFirstDayType('until')}
+                                                className={`flex-1 text-left px-4 py-3 rounded-xl border-2 transition-all font-bold text-[15px] ${bulkFirstDayType === 'until'
+                                                    ? 'border-[#4B2C82] bg-purple-50/50 text-[#4B2C82]'
+                                                    : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'
+                                                    }`}
+                                            >
+                                                Abwesend bis
+                                            </button>
+                                            <div className={`rounded-xl border-2 transition-all flex items-center w-[90px] ${bulkFirstDayType === 'until' ? 'border-[#4B2C82] bg-purple-50/50' : 'border-slate-100 bg-slate-50'
+                                                }`}>
                                                 <input
-                                                    type="text"
-                                                    placeholder="HH:MM"
+                                                    type="time"
                                                     value={bulkFirstDayTime}
-                                                    onChange={(e) => setBulkFirstDayTime(e.target.value)}
-                                                    className="ml-2 border-2 border-slate-200 rounded-lg px-2 py-1 text-sm outline-none focus:border-[#4B2C82]"
+                                                    placeholder="--:--"
+                                                    onChange={(e) => {
+                                                        setBulkFirstDayTime(e.target.value);
+                                                        if (e.target.value) setBulkFirstDayType('until');
+                                                    }}
+                                                    className="w-full bg-transparent px-2 py-2.5 outline-none font-bold text-sm text-slate-600 cursor-pointer text-center"
                                                 />
-                                            )}
-                                        </label>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
-                                {/* Last Day Options */}
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
-                                            Letzter Tag
-                                        </label>
-                                        <div className="space-y-2">
-                                            <label className="flex items-center gap-2 cursor-pointer">
+                                <div className="h-px bg-slate-100" />
+
+                                {/* Bis + Letzter Tag */}
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Bis</label>
+                                    <DatePickerPopup
+                                        value={bulkEndDate}
+                                        onChange={setBulkEndDate}
+                                        min={bulkStartDate || undefined}
+                                        placeholder="Enddatum wählen"
+                                    />
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Letzter Tag</label>
+                                    <div className="space-y-3">
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => setBulkLastDayType('full')}
+                                                className={`flex-1 text-left px-4 py-3 rounded-xl border-2 transition-all font-bold text-[15px] ${bulkLastDayType === 'full'
+                                                    ? 'border-[#4B2C82] bg-purple-50/50 text-[#4B2C82]'
+                                                    : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'
+                                                    }`}
+                                            >
+                                                Ganzer Tag
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => setBulkLastDayType('from')}
+                                                className={`flex-1 text-left px-4 py-3 rounded-xl border-2 transition-all font-bold text-[15px] ${bulkLastDayType === 'from'
+                                                    ? 'border-[#4B2C82] bg-purple-50/50 text-[#4B2C82]'
+                                                    : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'
+                                                    }`}
+                                            >
+                                                Abwesend ab
+                                            </button>
+                                            <div className={`rounded-xl border-2 transition-all flex items-center w-[90px] ${bulkLastDayType === 'from' ? 'border-[#4B2C82] bg-purple-50/50' : 'border-slate-100 bg-slate-50'
+                                                }`}>
                                                 <input
-                                                    type="radio"
-                                                    checked={bulkLastDayType === 'full'}
-                                                    onChange={() => setBulkLastDayType('full')}
-                                                    className="w-4 h-4"
+                                                    type="time"
+                                                    value={bulkLastDayTime}
+                                                    placeholder="--:--"
+                                                    onChange={(e) => {
+                                                        setBulkLastDayTime(e.target.value);
+                                                        if (e.target.value) setBulkLastDayType('from');
+                                                    }}
+                                                    className="w-full bg-transparent px-2 py-2.5 outline-none font-bold text-sm text-slate-600 cursor-pointer text-center"
                                                 />
-                                                <span className="text-sm font-medium">Ganzer Tag</span>
-                                            </label>
-                                            <label className="flex items-center gap-2 cursor-pointer">
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => setBulkLastDayType('until')}
+                                                className={`flex-1 text-left px-4 py-3 rounded-xl border-2 transition-all font-bold text-[15px] ${bulkLastDayType === 'until'
+                                                    ? 'border-[#4B2C82] bg-purple-50/50 text-[#4B2C82]'
+                                                    : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'
+                                                    }`}
+                                            >
+                                                Abwesend bis
+                                            </button>
+                                            <div className={`rounded-xl border-2 transition-all flex items-center w-[90px] ${bulkLastDayType === 'until' ? 'border-[#4B2C82] bg-purple-50/50' : 'border-slate-100 bg-slate-50'
+                                                }`}>
                                                 <input
-                                                    type="radio"
-                                                    checked={bulkLastDayType === 'from'}
-                                                    onChange={() => setBulkLastDayType('from')}
-                                                    className="w-4 h-4"
+                                                    type="time"
+                                                    value={bulkLastDayTime}
+                                                    placeholder="--:--"
+                                                    onChange={(e) => {
+                                                        setBulkLastDayTime(e.target.value);
+                                                        if (e.target.value) setBulkLastDayType('until');
+                                                    }}
+                                                    className="w-full bg-transparent px-2 py-2.5 outline-none font-bold text-sm text-slate-600 cursor-pointer text-center"
                                                 />
-                                                <span className="text-sm font-medium">Abwesend ab</span>
-                                                {bulkLastDayType === 'from' && (
-                                                    <input
-                                                        type="text"
-                                                        placeholder="HH:MM"
-                                                        value={bulkLastDayTime}
-                                                        onChange={(e) => setBulkLastDayTime(e.target.value)}
-                                                        className="ml-2 border-2 border-slate-200 rounded-lg px-2 py-1 text-sm outline-none focus:border-[#4B2C82]"
-                                                    />
-                                                )}
-                                            </label>
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input
-                                                    type="radio"
-                                                    checked={bulkLastDayType === 'until'}
-                                                    onChange={() => setBulkLastDayType('until')}
-                                                    className="w-4 h-4"
-                                                />
-                                                <span className="text-sm font-medium">Abwesend bis</span>
-                                                {bulkLastDayType === 'until' && (
-                                                    <input
-                                                        type="text"
-                                                        placeholder="HH:MM"
-                                                        value={bulkLastDayTime}
-                                                        onChange={(e) => setBulkLastDayTime(e.target.value)}
-                                                        className="ml-2 border-2 border-slate-200 rounded-lg px-2 py-1 text-sm outline-none focus:border-[#4B2C82]"
-                                                    />
-                                                )}
-                                            </label>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

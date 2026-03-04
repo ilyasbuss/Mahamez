@@ -6,32 +6,16 @@ import MyShifts from '../components/employee/MyShifts';
 import EmployeeAnalytics from '../components/employee/EmployeeAnalytics';
 import MahamezLogo from '../components/MahamezLogo';
 import { useAuth } from '../services/AuthContext';
+import { usePlannerDashboard } from '../hooks/usePlannerDashboard';
 import { Calendar, ClipboardList, Clock, LogOut, TrendingUp, User } from 'lucide-react';
 
 type TabType = 'availability' | 'schedule' | 'shifts' | 'analyse';
 
 const Availability: React.FC = () => {
     const { logout, user } = useAuth();
+    const { availability, handleAvailabilityChange, isSaving, lastSaved, events } = usePlannerDashboard();
     const [activeTab, setActiveTab] = useState<TabType>('availability');
     const [currentMonth, setCurrentMonth] = useState(new Date());
-    const [availability, setAvailability] = useState<Map<string, PartialAvailability>>(new Map());
-
-    const handleAvailabilityChange = (date: string, avail: PartialAvailability | null) => {
-        setAvailability((prev) => {
-            const next = new Map(prev);
-            if (avail === null) {
-                next.delete(date);
-            } else {
-                next.set(date, avail);
-            }
-            return next;
-        });
-    };
-
-    const handleSave = () => {
-        const count = availability.size;
-        alert(`Gespeichert! ${count} ${count === 1 ? 'Tag' : 'Tage'} mit Verfügbarkeitsangaben.`);
-    };
 
     return (
         <div className="min-h-screen flex flex-col md:flex-row text-slate-700 bg-[#f8fafc]">
@@ -117,17 +101,10 @@ const Availability: React.FC = () => {
                             onMonthJump={setCurrentMonth}
                             availability={availability}
                             onAvailabilityChange={handleAvailabilityChange}
+                            isSaving={isSaving}
+                            lastSaved={lastSaved}
+                            events={events}
                         />
-
-                        {/* Save Button */}
-                        <div className="flex justify-end">
-                            <button
-                                onClick={handleSave}
-                                className="bg-[#4B2C82] hover:bg-[#5B3798] text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-purple-900/10 transition"
-                            >
-                                Speichern
-                            </button>
-                        </div>
                     </div>
                 )}
 

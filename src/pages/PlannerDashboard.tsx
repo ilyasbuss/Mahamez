@@ -29,7 +29,8 @@ import {
 import MahamezLogo from '../components/MahamezLogo';
 import MyShifts from '../components/employee/MyShifts';
 import AvailabilityCalendar from '../components/employee/AvailabilityCalendar';
-import { PartialAvailability, Redaktion, SkillGroup } from '../types';
+import DatePickerPopup from '../components/employee/DatePickerPopup';
+import { PartialAvailability, Redaktion, SkillGroup, CalendarEvent } from '../types';
 import {
   BarChart,
   Bar,
@@ -83,7 +84,9 @@ const PlannerDashboard: React.FC = () => {
     handleCloseDeleteConf, handleExport, toggleShadowing, toggleDepartmentFilter,
     handleDeleteEmployee, handleAddRow, handleReorderRoles, handleEditRow, handleReorderRoleInGroup,
     filteredSkillGroups, rolesTabSkillGroups,
-    hasUnpublishedChanges, handlePublish
+    hasUnpublishedChanges, handlePublish,
+    availability, handleAvailabilityChange, isSaving, lastSaved,
+    events, handleSaveEvent, handleDeleteEvent
   } = usePlannerDashboard();
 
   const { logout } = useAuth();
@@ -94,18 +97,28 @@ const PlannerDashboard: React.FC = () => {
   const [isRedaktionManagerOpen, setIsRedaktionManagerOpen] = React.useState(false);
 
   const [currentMonth, setCurrentMonth] = React.useState(new Date());
-  const [availability, setAvailability] = React.useState<Map<string, PartialAvailability>>(new Map());
 
-  const handleAvailabilityChange = (date: string, avail: PartialAvailability | null) => {
-    setAvailability((prev) => {
-      const next = new Map(prev);
-      if (avail === null) {
-        next.delete(date);
-      } else {
-        next.set(date, avail);
-      }
-      return next;
-    });
+  const [isEventModalOpen, setIsEventModalOpen] = React.useState(false);
+  const [newEventName, setNewEventName] = React.useState('');
+  const [newEventStart, setNewEventStart] = React.useState('');
+  const [newEventEnd, setNewEventEnd] = React.useState('');
+  const [newEventDepts, setNewEventDepts] = React.useState<string[]>([]);
+
+  const onSaveEvent = () => {
+    if (!newEventName.trim() || !newEventStart || !newEventEnd) return;
+    const ev: CalendarEvent = {
+      id: Date.now().toString(),
+      name: newEventName.trim(),
+      startDate: newEventStart,
+      endDate: newEventEnd,
+      planIds: newEventDepts, // Reusing planIds field for departments as requested
+    };
+    handleSaveEvent(ev);
+    setIsEventModalOpen(false);
+    setNewEventName('');
+    setNewEventStart('');
+    setNewEventEnd('');
+    setNewEventDepts([]);
   };
 
   const statsData = useMemo(() => {
@@ -184,10 +197,19 @@ const PlannerDashboard: React.FC = () => {
                 </button>
               )}
               {activeTab === 'new-plan' ? (
-                <button onClick={handleAiOptimize} disabled={isAiLoading} className="bg-[#4B2C82] hover:bg-[#5B3798] text-white px-8 h-9 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2">
-                  <Sparkles size={16} className="text-[#9F7AEA]" />
-                  <span>Autofill</span>
-                </button>
+                <>
+                  <button
+                    onClick={() => setIsEventModalOpen(true)}
+                    className="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-6 h-9 rounded-xl font-bold shadow-sm transition-all flex items-center gap-2"
+                  >
+                    <CalendarIcon size={15} className="text-[#4B2C82]" />
+                    <span>Event erstellen</span>
+                  </button>
+                  <button onClick={handleAiOptimize} disabled={isAiLoading} className="bg-[#4B2C82] hover:bg-[#5B3798] text-white px-8 h-9 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2">
+                    <Sparkles size={16} className="text-[#9F7AEA]" />
+                    <span>Autofill</span>
+                  </button>
+                </>
               ) : activeTab === 'rules' ? (
                 <button onClick={handleAiOptimize} disabled={isAiLoading} className="bg-[#4B2C82] hover:bg-[#5B3798] text-white px-8 h-9 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2">
                   {isAiLoading ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> : <><Sparkles size={16} className="text-[#9F7AEA]" /><span>Regel erstellen</span></>}
@@ -274,6 +296,7 @@ const PlannerDashboard: React.FC = () => {
             onAddRow={handleAddRow}
             onReorder={handleReorderRoles}
             onEditRow={handleEditRow}
+            events={events}
           />
         )}
 
@@ -400,12 +423,6 @@ const PlannerDashboard: React.FC = () => {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-slate-800">Verfügbarkeiten verwalten</h2>
-              <button
-                onClick={() => alert('Verfügbarkeiten gespeichert!')}
-                className="px-8 py-3 bg-[#4B2C82] text-white rounded-2xl font-bold shadow-lg shadow-purple-900/20 hover:bg-[#5B3798] transition-all"
-              >
-                Speichern
-              </button>
             </div>
             <AvailabilityCalendar
               currentMonth={currentMonth}
@@ -413,6 +430,8 @@ const PlannerDashboard: React.FC = () => {
               onMonthJump={setCurrentMonth}
               availability={availability}
               onAvailabilityChange={handleAvailabilityChange}
+              isSaving={isSaving}
+              lastSaved={lastSaved}
             />
           </div>
         )}
@@ -504,6 +523,112 @@ const PlannerDashboard: React.FC = () => {
         onSave={handleSaveEmployee}
         onDelete={handleDeleteEmployee}
       />
+
+      {/* Event Creation Modal */}
+      {isEventModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-[#1D0B40]/70 backdrop-blur-lg">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl p-6 animate-in zoom-in duration-200">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-xl font-bold text-slate-800">Event erstellen</h3>
+              <button onClick={() => setIsEventModalOpen(false)} className="p-1 hover:bg-slate-100 rounded-lg text-slate-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Name */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Eventname</label>
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder="Eventname eingeben..."
+                  value={newEventName}
+                  onChange={e => setNewEventName(e.target.value)}
+                  className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-[#4B2C82] font-bold text-slate-800 bg-slate-50"
+                />
+              </div>
+
+              {/* Date range */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Von</label>
+                  <DatePickerPopup value={newEventStart} onChange={setNewEventStart} placeholder="Startdatum" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Bis</label>
+                  <DatePickerPopup value={newEventEnd} onChange={setNewEventEnd} min={newEventStart || undefined} placeholder="Enddatum" />
+                </div>
+              </div>
+
+              {/* Redaktion assignment */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+                  Für welche Redaktionen? <span className="text-slate-300 normal-case font-medium">(leer = alle)</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {redaktionen.map(dept => {
+                    const isSelected = newEventDepts.includes(dept);
+                    return (
+                      <button
+                        key={dept}
+                        type="button"
+                        onClick={() => setNewEventDepts(prev =>
+                          isSelected ? prev.filter(p => p !== dept) : [...prev, dept]
+                        )}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold border-2 transition-all ${isSelected ? 'border-[#4B2C82] bg-purple-50 text-[#4B2C82]' : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                          }`}
+                      >
+                        {dept}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Existing events list */}
+              {events.length > 0 && (
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Bestehende Events</label>
+                  <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                    {events.map(ev => (
+                      <div key={ev.id} className="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-xl border border-slate-100">
+                        <div>
+                          <span className="font-bold text-sm text-slate-700">{ev.name}</span>
+                          <span className="ml-2 text-[10px] text-slate-400">{ev.startDate} – {ev.endDate}</span>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteEvent(ev)}
+                          className="text-slate-300 hover:text-red-400 transition-all p-0.5 rounded"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" /></svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2 border-t border-slate-100">
+                <button
+                  onClick={() => setIsEventModalOpen(false)}
+                  className="flex-1 py-2.5 border-2 border-slate-200 rounded-2xl text-slate-600 font-bold hover:bg-slate-50 transition"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  onClick={onSaveEvent}
+                  disabled={!newEventName.trim() || !newEventStart || !newEventEnd}
+                  className="flex-1 py-2.5 bg-[#4B2C82] text-white rounded-2xl font-bold hover:bg-[#5B3798] transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Event speichern
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

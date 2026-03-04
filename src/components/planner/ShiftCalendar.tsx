@@ -2,7 +2,7 @@ import React, { useRef, useState, useMemo } from 'react';
 import { format, isSameDay } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { Clock, X, Plus, GripVertical, Edit2, Search } from 'lucide-react';
-import { Employee, Shift, RoleDefinition } from '../../types';
+import { Employee, Shift, RoleDefinition, CalendarEvent } from '../../types';
 import { formatEmployeeName } from '../../utils/dashboardUtils';
 
 interface ShiftCalendarProps {
@@ -18,6 +18,8 @@ interface ShiftCalendarProps {
     onAddRow?: (roleName: string) => void;
     onReorder?: (fromIdx: number, toIdx: number) => void;
     onEditRow?: (oldName: string, newName: string) => void;
+    events?: CalendarEvent[];
+    currentPlanId?: string;
 }
 
 const ShiftCalendar: React.FC<ShiftCalendarProps> = ({
@@ -32,7 +34,9 @@ const ShiftCalendar: React.FC<ShiftCalendarProps> = ({
     isNewPlanView,
     onAddRow,
     onReorder,
-    onEditRow
+    onEditRow,
+    events = [],
+    currentPlanId,
 }) => {
     const [activeDropdown, setActiveDropdown] = useState<{ roleName: string; dateStr: string } | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
@@ -82,11 +86,47 @@ const ShiftCalendar: React.FC<ShiftCalendarProps> = ({
                 <thead>
                     <tr className="bg-slate-50">
                         <th className="p-2 border-b border-r sticky left-0 bg-slate-50 z-20 font-bold text-slate-600 text-[12px] uppercase tracking-widest whitespace-nowrap w-[1%]">Funktion</th>
-                        {weekDays.map(day => {
+                        {weekDays.map((day, idx) => {
                             const isToday = isSameDay(day, new Date());
+                            const ds = format(day, 'yyyy-MM-dd');
+
+                            // Find events for this day
+                            const activeEvent = events.find(e =>
+                                (e.planIds.length === 0 || (currentPlanId && e.planIds.includes(currentPlanId))) &&
+                                ds >= e.startDate && ds <= e.endDate
+                            );
+
+                            // Calculate if name should be shown in this cell (centered in visible part)
+                            let showName = false;
+                            if (activeEvent) {
+                                const visibleDays = weekDays.filter(d => {
+                                    const s = format(d, 'yyyy-MM-dd');
+                                    return s >= activeEvent.startDate && s <= activeEvent.endDate;
+                                });
+                                const middleDay = visibleDays[Math.floor(visibleDays.length / 2)];
+                                if (isSameDay(day, middleDay)) {
+                                    showName = true;
+                                }
+                            }
+
                             return (
-                                <th key={day.toISOString()} className={`p-2 border-b border-r min-w-[110px] text-center relative ${isToday ? 'bg-purple-50/20' : ''}`}>
+                                <th key={day.toISOString()} className={`p-2 pt-6 border-b border-r min-w-[110px] text-center relative ${isToday ? 'bg-purple-50/20' : ''}`}>
                                     {isToday && <div className="absolute top-0 left-0 right-0 h-1 bg-[#4B2C82] z-30" />}
+
+                                    {activeEvent && (
+                                        <div
+                                            className="absolute top-0 left-0 right-0 h-5 bg-[#4B2C82] flex items-center justify-center overflow-hidden z-20"
+                                            style={{
+                                                left: activeEvent.startDate === ds ? 0 : '-1px',
+                                                right: activeEvent.endDate === ds ? 0 : '-1px',
+                                            }}
+                                        >
+                                            {showName && (
+                                                <span className="text-[10px] font-bold text-white/90 truncate px-2">{activeEvent.name}</span>
+                                            )}
+                                        </div>
+                                    )}
+
                                     <div className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">{format(day, 'EEEE', { locale: de })}</div>
                                     <div className={`text-[13px] font-bold ${isToday ? 'text-slate-900' : 'text-slate-700'}`}>{format(day, 'dd.MM.')}</div>
                                 </th>

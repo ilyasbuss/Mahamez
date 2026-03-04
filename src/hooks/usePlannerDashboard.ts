@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { startOfWeek, addDays, format, parseISO, subWeeks, addWeeks, getISOWeek } from 'date-fns';
-import { Employee, Shift, SkillGroup, RoleDefinition, Redaktion, SkillAssignment, ShiftTypeID } from '../types';
+import { Employee, Shift, SkillGroup, RoleDefinition, Redaktion, SkillAssignment, ShiftTypeID, PartialAvailability, CalendarEvent } from '../types';
 import { INITIAL_EMPLOYEES, INITIAL_SKILL_GROUPS, VERTRAGS_OPTIONEN, REDAKTIONS_OPTIONEN } from '../constants';
 import { autoScheduleShifts } from '../services/geminiService';
 import { generateId, validatePercentageSum } from '../utils/dashboardUtils';
@@ -16,7 +16,7 @@ interface AppNotification {
 
 interface DeleteConfirmation {
     isOpen: boolean;
-    type: 'employee' | 'shift' | 'role' | 'group';
+    type: 'employee' | 'shift' | 'role' | 'group' | 'redaktion' | 'event';
     id: string;
     name: string;
 }
@@ -28,6 +28,8 @@ interface CancelConfirmation {
 
 const STORAGE_KEY_SHIFTS = 'mahamez_shifts';
 const STORAGE_KEY_PUBLISHED = 'mahamez_published_shifts';
+const STORAGE_KEY_AVAILABILITY = 'mahamez_availability';
+const STORAGE_KEY_EVENTS = 'mahamez_events';
 
 export const usePlannerDashboard = () => {
     const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
@@ -41,6 +43,26 @@ export const usePlannerDashboard = () => {
     // Load published shifts from localStorage
     const [publishedShifts, setPublishedShifts] = useState<Shift[]>(() => {
         const saved = localStorage.getItem(STORAGE_KEY_PUBLISHED);
+        return saved ? JSON.parse(saved) : [];
+    });
+
+    const [availability, setAvailability] = useState<Map<string, PartialAvailability>>(() => {
+        const saved = localStorage.getItem(STORAGE_KEY_AVAILABILITY);
+        if (!saved) return new Map();
+        try {
+            const parsed = JSON.parse(saved);
+            return new Map(Object.entries(parsed));
+        } catch (e) {
+            console.error('Failed to parse availability:', e);
+            return new Map();
+        }
+    });
+
+    const [lastSaved, setLastSaved] = useState<Date | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+
+    const [events, setEvents] = useState<CalendarEvent[]>(() => {
+        const saved = localStorage.getItem(STORAGE_KEY_EVENTS);
         return saved ? JSON.parse(saved) : [];
     });
 
@@ -100,6 +122,22 @@ export const usePlannerDashboard = () => {
 
         setHasUnpublishedChanges(isDifferent);
     }, [shifts, publishedShifts, weekDays]);
+
+    // Sync availability to localStorage with a small debounce/useEffect
+    useEffect(() => {
+        setIsSaving(true);
+        const timeout = setTimeout(() => {
+            const obj = Object.fromEntries(availability.entries());
+            localStorage.setItem(STORAGE_KEY_AVAILABILITY, JSON.stringify(obj));
+            setLastSaved(new Date());
+            setIsSaving(false);
+        }, 500);
+        return () => clearTimeout(timeout);
+    }, [availability]);
+
+    useEffect(() => {
+        localStorage.setItem(STORAGE_KEY_EVENTS, JSON.stringify(events));
+    }, [events]);
 
     const handlePublish = useCallback(() => {
         const startStr = format(weekDays[0], 'yyyy-MM-dd');
@@ -184,6 +222,18 @@ export const usePlannerDashboard = () => {
         setShifts(prev => [...prev, newShift]);
     }, []);
 
+    const handleAvailabilityChange = useCallback((date: string, avail: PartialAvailability | null) => {
+        setAvailability((prev) => {
+            const next = new Map(prev);
+            if (avail === null) {
+                next.delete(date);
+            } else {
+                next.set(date, avail);
+            }
+            return next;
+        });
+    }, []);
+
     const deleteShift = useCallback((id: string) => {
         const shift = shifts.find(s => s.id === id);
         const emp = employees.find(e => e.id === shift?.employeeId);
@@ -250,6 +300,10 @@ export const usePlannerDashboard = () => {
                 return g;
             }));
             setEditingRole(null);
+        } else if (deleteConf.type === 'redaktion') {
+            setRedaktionen(prev => prev.filter(r => r !== deleteConf.id));
+        } else if (deleteConf.type === 'event') {
+            setEvents(prev => prev.filter(e => e.id !== deleteConf.id));
         }
         setDeleteConf(prev => ({ ...prev, isOpen: false }));
     }, [deleteConf, deleteTimer]);
@@ -420,7 +474,15 @@ export const usePlannerDashboard = () => {
     }, [redaktionen]);
 
     const handleDeleteRedaktion = useCallback((name: string) => {
-        setRedaktionen(prev => prev.filter(r => r !== name));
+        setDeleteConf({ isOpen: true, type: 'redaktion', id: name, name: `Redaktion "${name}"` });
+    }, []);
+
+    const handleSaveEvent = useCallback((event: CalendarEvent) => {
+        setEvents(prev => [...prev, event]);
+    }, []);
+
+    const handleDeleteEvent = useCallback((event: CalendarEvent) => {
+        setDeleteConf({ isOpen: true, type: 'event', id: event.id, name: `Event "${event.name}"` });
     }, []);
 
     return {
@@ -452,6 +514,8 @@ export const usePlannerDashboard = () => {
         confirmDeleteAction, handleCloseModal, handlePreviousWeek, handleNextWeek,
         handleCloseDeleteConf, handleExport, toggleShadowing, toggleDepartmentFilter,
         handleDeleteEmployee, handleAddRow, handleReorderRoles, handleEditRow, handleReorderRoleInGroup,
-        publishedShifts, hasUnpublishedChanges, handlePublish
+        publishedShifts, hasUnpublishedChanges, handlePublish,
+        availability, handleAvailabilityChange, isSaving, lastSaved,
+        events, handleSaveEvent, handleDeleteEvent
     };
 };
