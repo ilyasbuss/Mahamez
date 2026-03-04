@@ -161,7 +161,7 @@ const PlannerDashboard: React.FC = () => {
       <main className="flex-1 p-4 md:p-4 overflow-y-auto bg-[#f8fafc]">
         <header className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
           <div className="flex items-center gap-2.5 flex-wrap">
-            <h1 className="text-xl font-bold text-slate-800 w-[220px] shrink-0">
+            <h1 className="text-xl font-bold text-slate-800 whitespace-nowrap">
               {activeTab === 'calendar' ? 'Aktueller Dienstplan' :
                 activeTab === 'new-plan' ? 'Neuer Dienstplan' :
                   activeTab === 'employees' ? 'Personalverwaltung' :

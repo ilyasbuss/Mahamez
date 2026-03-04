@@ -372,11 +372,18 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                             const isPrevInBlock = !isMonday && isUnavailable && !!prevAvail && leftEndsAtMidnight(prevAvail.status) && rightStartsAtMidnight(avail!.status) && avail!.status !== 'vacation' && prevAvail.status !== 'vacation' && addDays(day, -1) >= monthStart;
                             const isNextInBlock = !isSunday && isUnavailable && !!nextAvail && leftEndsAtMidnight(avail!.status) && rightStartsAtMidnight(nextAvail.status) && avail!.status !== 'vacation' && nextAvail.status !== 'vacation' && addDays(day, 1) <= monthEnd;
 
+                            // For cell-wide event tracking:
+                            const cellEvents = isCurrentMonth ? events.filter(ev =>
+                                (!currentPlanId || !ev.planIds || ev.planIds.length === 0 || ev.planIds.includes(currentPlanId)) &&
+                                dateStr >= ev.startDate && dateStr <= ev.endDate
+                            ) : [];
+                            const hasEvent = cellEvents.length > 0;
+                            const activeEvent = hasEvent ? cellEvents[0] : null;
+
                             return (
                                 <button
-                                    key={dateStr}
+                                    key={day.toString()}
                                     onClick={() => handleDayClick(day)}
-                                    draggable={isCurrentMonth && isUnavailable}
                                     onDragStart={(e) => {
                                         if (isCurrentMonth && avail) {
                                             setDraggedAvailability(avail);
@@ -445,24 +452,18 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                     {isUnavailable && isCurrentMonth && (
                                         <>
                                             {isPrevInBlock && (
-                                                <div className={`absolute top-3 bottom-3 -left-[7px] w-[7px] z-[-1] ${avail!.status === 'vacation' ? 'bg-blue-50/80' : 'bg-red-50/80'}`} />
+                                                <div className={`absolute ${hasEvent ? 'top-[19px]' : 'top-3'} bottom-3 -left-[7px] w-[7px] z-[-1] ${avail!.status === 'vacation' ? 'bg-blue-50/80' : 'bg-red-50/80'}`} />
                                             )}
                                             {isNextInBlock && (
-                                                <div className={`absolute top-3 bottom-3 -right-[7px] w-[7px] z-[-1] ${avail!.status === 'vacation' ? 'bg-blue-50/80' : 'bg-red-50/80'}`} />
+                                                <div className={`absolute ${hasEvent ? 'top-[19px]' : 'top-3'} bottom-3 -right-[7px] w-[7px] z-[-1] ${avail!.status === 'vacation' ? 'bg-blue-50/80' : 'bg-red-50/80'}`} />
                                             )}
                                         </>
                                     )}
 
                                     {/* Event band — runs across top of cell */}
-                                    {isCurrentMonth && (() => {
-                                        const activeEvents = events.filter(ev =>
-                                            (!currentPlanId || !ev.planIds || ev.planIds.length === 0 || ev.planIds.includes(currentPlanId)) &&
-                                            dateStr >= ev.startDate && dateStr <= ev.endDate
-                                        );
-                                        if (activeEvents.length === 0) return null;
-                                        const ev = activeEvents[0];
-                                        const isFirstDayOfEvent = ev.startDate === dateStr;
-                                        const isLastDayOfEvent = ev.endDate === dateStr;
+                                    {hasEvent && activeEvent && (() => {
+                                        const isFirstDayOfEvent = activeEvent.startDate === dateStr;
+                                        const isLastDayOfEvent = activeEvent.endDate === dateStr;
 
                                         const roundLeft = isFirstDayOfEvent || isMonday;
                                         const roundRight = isLastDayOfEvent || isSunday;
@@ -472,10 +473,10 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                         const currentWeekDays = [0, 1, 2, 3, 4, 5, 6].map(i => addDays(weekStart, i));
                                         const visibleEventDaysInWeek = currentWeekDays.filter(d => {
                                             const s = format(d, 'yyyy-MM-dd');
-                                            return s >= ev.startDate && s <= ev.endDate && s >= format(monthStart, 'yyyy-MM-dd') && s <= format(monthEnd, 'yyyy-MM-dd');
+                                            return s >= activeEvent.startDate && s <= activeEvent.endDate && s >= format(monthStart, 'yyyy-MM-dd') && s <= format(monthEnd, 'yyyy-MM-dd');
                                         });
                                         const visibleDaysCount = visibleEventDaysInWeek.length;
-                                        const isFirstVisibleDayInWeek = format(visibleEventDaysInWeek[0], 'yyyy-MM-dd') === dateStr;
+                                        const startOffsetDays = visibleEventDaysInWeek.findIndex(d => format(d, 'yyyy-MM-dd') === dateStr);
 
                                         return (
                                             <>
@@ -484,12 +485,15 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                                         } ${roundRight ? 'rounded-tr-xl -right-[1px]' : '-right-[4px]'
                                                         }`}
                                                 />
-                                                {isFirstVisibleDayInWeek && (
+                                                {startOffsetDays !== -1 && (
                                                     <div
-                                                        className="absolute -top-[1px] left-[-1px] h-[19px] flex items-center justify-center pointer-events-none z-[30]"
-                                                        style={{ width: `calc(${visibleDaysCount} * 100% + ${visibleDaysCount - 1} * 6px + 2px)` }}
+                                                        className="absolute -top-[1px] h-[19px] flex items-center justify-center pointer-events-none z-[30]"
+                                                        style={{
+                                                            width: `calc(${visibleDaysCount} * 100% + ${visibleDaysCount - 1} * 6px + 2px)`,
+                                                            left: `calc(-${startOffsetDays} * 100% - ${startOffsetDays} * 6px - 1px)`
+                                                        }}
                                                     >
-                                                        <span className="text-[10px] font-bold text-white/90 truncate px-2">{ev.name}</span>
+                                                        <span className="text-[10px] font-bold text-white/90 truncate px-2">{activeEvent.name}</span>
                                                     </div>
                                                 )}
                                             </>
@@ -497,17 +501,11 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                     })()}
 
                                     {/* Monday KW Banner — sits seamlessly with event band if present */}
-                                    {isMonday && isCurrentMonth && (() => {
-                                        const hasEvent = events.some(ev =>
-                                            (!currentPlanId || !ev.planIds || ev.planIds.length === 0 || ev.planIds.includes(currentPlanId)) &&
-                                            dateStr >= ev.startDate && dateStr <= ev.endDate
-                                        );
-                                        return (
-                                            <div className={`absolute -top-[1px] -left-[1px] bg-[#4B2C82] text-white text-[10px] font-bold px-1.5 h-[19px] flex items-center rounded-tl-xl ${!hasEvent ? 'rounded-br-lg shadow-sm' : ''} z-[26]`}>
-                                                KW {getISOWeek(day)}
-                                            </div>
-                                        );
-                                    })()}
+                                    {isMonday && isCurrentMonth && (
+                                        <div className={`absolute -top-[1px] -left-[1px] bg-[#4B2C82] text-white text-[10px] font-bold px-1.5 h-[19px] flex items-center rounded-tl-xl ${!hasEvent ? 'rounded-br-lg shadow-sm' : ''} z-[26]`}>
+                                            KW {getISOWeek(day)}
+                                        </div>
+                                    )}
 
                                     {/* Holiday Name — anchored bottom next to day number */}
                                     {holidayData && isCurrentMonth && (
@@ -521,23 +519,23 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                     {/* Large centered Ban icon for full-day absence */}
                                     {isUnavailable && avail && avail.status === 'unavailable_full' && (
                                         <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-                                            <Ban size={isCurrentMonth ? 48 : 28} className="text-red-500 opacity-80" strokeWidth={1.5} />
+                                            <Ban size={48} className="text-red-500 opacity-80" strokeWidth={1.5} />
                                         </div>
                                     )}
 
                                     {/* Large centered Plane icon for vacation */}
                                     {isUnavailable && avail && avail.status === 'vacation' && (
                                         <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-                                            <Plane size={isCurrentMonth ? 48 : 28} className="text-blue-500 opacity-80" strokeWidth={1.5} />
+                                            <Plane size={48} className="text-blue-500 opacity-80" strokeWidth={1.5} />
                                         </div>
                                     )}
 
                                     {/* Hourly status (small, with time) */}
                                     {isUnavailable && avail && (avail.status === 'unavailable_from' || avail.status === 'unavailable_until') && (
                                         <div className="absolute bottom-7 left-1/2 -translate-x-1/2 flex flex-col items-center z-10">
-                                            <Clock size={isCurrentMonth ? 16 : 12} className="text-red-400" />
+                                            <Clock size={16} className="text-red-400" />
                                             {avail.time && (
-                                                <span className={`font-bold mt-0.5 text-slate-600 ${isCurrentMonth ? 'text-[11px]' : 'text-[9px]'}`}>{avail.time}</span>
+                                                <span className="font-bold mt-0.5 text-slate-600 text-[11px]">{avail.time}</span>
                                             )}
                                         </div>
                                     )}
@@ -558,28 +556,22 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                     </span>
 
                                     {/* State Badges Top Right */}
-                                    {(bwHoliday || rpHoliday || isBwSchool || isRpSchool) && isCurrentMonth && (() => {
-                                        const hasEvent = events && events.some(ev =>
-                                            (!currentPlanId || !ev.planIds || ev.planIds.length === 0 || ev.planIds.includes(currentPlanId)) &&
-                                            dateStr >= ev.startDate && dateStr <= ev.endDate
-                                        );
-                                        return (
-                                            <div className={`absolute ${hasEvent ? 'top-[20px]' : 'top-1'} right-1.5 z-20 transition-all`}>
-                                                <div className="flex gap-0.5">
-                                                    {(bwHoliday || isBwSchool) && (
-                                                        <span className={`text-[7px] font-bold text-white px-1 py-0.5 rounded shadow-sm ${bwHoliday ? 'bg-orange-400' : 'bg-orange-300'}`}>
-                                                            BW
-                                                        </span>
-                                                    )}
-                                                    {(rpHoliday || isRpSchool) && (
-                                                        <span className={`text-[7px] font-bold text-white px-1 py-0.5 rounded shadow-sm ${rpHoliday ? 'bg-blue-400' : 'bg-blue-300'}`}>
-                                                            RP
-                                                        </span>
-                                                    )}
-                                                </div>
+                                    {(bwHoliday || rpHoliday || isBwSchool || isRpSchool) && isCurrentMonth && (
+                                        <div className={`absolute ${hasEvent ? 'top-[20px]' : 'top-1'} right-1.5 z-20 transition-all`}>
+                                            <div className="flex gap-0.5">
+                                                {(bwHoliday || isBwSchool) && (
+                                                    <span className={`text-[7px] font-bold text-white px-1 py-0.5 rounded shadow-sm ${bwHoliday ? 'bg-orange-400' : 'bg-orange-300'}`}>
+                                                        BW
+                                                    </span>
+                                                )}
+                                                {(rpHoliday || isRpSchool) && (
+                                                    <span className={`text-[7px] font-bold text-white px-1 py-0.5 rounded shadow-sm ${rpHoliday ? 'bg-blue-400' : 'bg-blue-300'}`}>
+                                                        RP
+                                                    </span>
+                                                )}
                                             </div>
-                                        );
-                                    })()}
+                                        </div>
+                                    )}
                                 </button>
                             );
                         })}
