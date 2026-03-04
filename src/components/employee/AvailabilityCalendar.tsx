@@ -457,7 +457,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                     {/* Event band — runs across top of cell */}
                                     {isCurrentMonth && (() => {
                                         const activeEvents = events.filter(ev =>
-                                            (ev.planIds.length === 0 || (currentPlanId && ev.planIds.includes(currentPlanId))) &&
+                                            (!currentPlanId || !ev.planIds || ev.planIds.length === 0 || ev.planIds.includes(currentPlanId)) &&
                                             dateStr >= ev.startDate && dateStr <= ev.endDate
                                         );
                                         if (activeEvents.length === 0) return null;
@@ -491,7 +491,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                     {/* Monday KW Banner — sits seamlessly with event band if present */}
                                     {isMonday && isCurrentMonth && (() => {
                                         const hasEvent = events.some(ev =>
-                                            (ev.planIds.length === 0 || (currentPlanId && ev.planIds.includes(currentPlanId))) &&
+                                            (!currentPlanId || !ev.planIds || ev.planIds.length === 0 || ev.planIds.includes(currentPlanId)) &&
                                             dateStr >= ev.startDate && dateStr <= ev.endDate
                                         );
                                         return (
@@ -552,7 +552,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                     {/* State Badges Top Right */}
                                     {(bwHoliday || rpHoliday || isBwSchool || isRpSchool) && isCurrentMonth && (() => {
                                         const hasEvent = events && events.some(ev =>
-                                            (ev.planIds.length === 0 || (currentPlanId && ev.planIds.includes(currentPlanId))) &&
+                                            (!currentPlanId || !ev.planIds || ev.planIds.length === 0 || ev.planIds.includes(currentPlanId)) &&
                                             dateStr >= ev.startDate && dateStr <= ev.endDate
                                         );
                                         return (

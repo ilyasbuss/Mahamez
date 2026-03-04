@@ -429,6 +429,7 @@ const PlannerDashboard: React.FC = () => {
               onAvailabilityChange={handleAvailabilityChange}
               isSaving={isSaving}
               lastSaved={lastSaved}
+              events={events}
             />
           </div>
         )}
