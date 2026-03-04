@@ -256,25 +256,25 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                 {/* Calendar Header */}
                 <div className="p-4 border-b flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1 bg-slate-50/50 p-1 rounded-xl border border-slate-100/50">
+                        <div className="flex items-center gap-1 bg-slate-50/50 p-0.5 rounded-xl border border-slate-100/50">
                             <button
                                 onClick={() => {
                                     const prev = subMonths(currentMonth, 1);
                                     if (prev >= monthOptions[0]) onMonthChange(prev);
                                 }}
                                 disabled={currentMonth <= monthOptions[0]}
-                                className={`p-1.5 rounded-lg transition-colors ${currentMonth <= monthOptions[0] ? 'text-slate-300 cursor-not-allowed' : 'hover:bg-white text-slate-600'}`}
+                                className={`p-1 rounded-lg transition-colors ${currentMonth <= monthOptions[0] ? 'text-slate-300 cursor-not-allowed' : 'bg-transparent text-slate-600'}`}
                             >
-                                <ChevronLeft size={18} />
+                                <ChevronLeft size={16} />
                             </button>
 
                             <div className="relative group">
                                 <select
                                     value={format(currentMonth, 'yyyy-MM')}
                                     onChange={(e) => onMonthJump(new Date(e.target.value + '-01'))}
-                                    className="pl-2 pr-5 py-1 text-base font-bold text-slate-800 bg-transparent focus:outline-none rounded-lg cursor-pointer capitalize appearance-none transition-all duration-200"
+                                    className="pl-2 pr-4 py-0.5 text-[14px] font-bold text-slate-800 bg-transparent focus:outline-none rounded-lg cursor-pointer capitalize appearance-none transition-all duration-200"
                                     size={1}
-                                    style={{ maxHeight: '50vh' }}
+                                    style={{ maxHeight: '25vh' }}
                                 >
                                     {monthOptions.map((month) => (
                                         <option key={format(month, 'yyyy-MM')} value={format(month, 'yyyy-MM')}>
@@ -282,7 +282,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                         </option>
                                     ))}
                                 </select>
-                                <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-slate-600">
+                                <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                                     <ChevronRight size={10} className="rotate-90" />
                                 </div>
                             </div>
@@ -293,16 +293,16 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                     if (next <= monthOptions[monthOptions.length - 1]) onMonthChange(next);
                                 }}
                                 disabled={currentMonth >= monthOptions[monthOptions.length - 1]}
-                                className={`p-1.5 rounded-lg transition-colors ${currentMonth >= monthOptions[monthOptions.length - 1] ? 'text-slate-300 cursor-not-allowed' : 'hover:bg-white text-slate-600'}`}
+                                className={`p-1 rounded-lg transition-colors ${currentMonth >= monthOptions[monthOptions.length - 1] ? 'text-slate-300 cursor-not-allowed' : 'bg-transparent text-slate-600'}`}
                             >
-                                <ChevronRight size={18} />
+                                <ChevronRight size={16} />
                             </button>
                         </div>
 
                         {/* Bulk Blocking Button — original design */}
                         <button
                             onClick={() => setIsBulkBlockingOpen(true)}
-                            className="p-1.5 bg-purple-50 hover:bg-purple-100 text-[#4B2C82] rounded-lg transition flex items-center gap-1.5 px-3"
+                            className="p-1.5 bg-purple-50 text-[#4B2C82] rounded-lg transition flex items-center gap-1.5 px-3"
                             title="Zeitraum blocken"
                         >
                             <Plus size={16} />
@@ -402,21 +402,21 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                     }}
                                     className={`
                                         relative flex flex-col items-center border transition-all duration-200 py-4 px-2 min-h-[90px] rounded-xl
-                                        ${!isCurrentMonth ? 'opacity-40 bg-slate-50/30 border-slate-200/60 hover:opacity-60' : ''}
+                                        ${!isCurrentMonth ? 'opacity-50 bg-slate-50/30 border-slate-200/60' : ''}
                                         ${isCurrentMonth && isUnavailable && avail!.status === 'unavailable_full'
-                                            ? 'border-red-300 bg-red-50/80 hover:z-30'
+                                            ? 'border-red-300 bg-red-50/80 z-20'
                                             : isCurrentMonth && isUnavailable && avail!.status === 'vacation'
-                                                ? 'border-blue-300 bg-blue-50/80 hover:z-30'
+                                                ? 'border-blue-300 bg-blue-50/80 z-20'
                                                 : isCurrentMonth && isUnavailable && (avail!.status === 'unavailable_from' || avail!.status === 'unavailable_until')
-                                                    ? 'border-red-300 bg-white hover:z-30'
+                                                    ? 'border-red-300 bg-white z-20'
                                                     : isCurrentMonth && holidayData
-                                                        ? 'bg-amber-50 border-orange-400/60 shadow-sm hover:z-30'
+                                                        ? 'bg-amber-50 border-orange-400/60 shadow-sm z-10'
                                                         : isCurrentMonth && isSchool
-                                                            ? 'bg-orange-50/50 border-slate-200 hover:z-30'
+                                                            ? 'bg-orange-50/50 border-slate-200 z-10'
                                                             : isCurrentMonth && isWknd
-                                                                ? 'bg-purple-50 border-purple-200 hover:z-30'
+                                                                ? 'bg-purple-50 border-purple-200 z-10'
                                                                 : isCurrentMonth
-                                                                    ? 'bg-white border-slate-200 hover:border-purple-300 hover:shadow-md hover:z-30'
+                                                                    ? 'bg-white border-slate-200 z-10'
                                                                     : ''
                                         }
                                     `}
@@ -511,8 +511,8 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
 
                                     {/* Holiday Name — anchored bottom next to day number */}
                                     {holidayData && isCurrentMonth && (
-                                        <div className="absolute bottom-[9px] left-[23px] right-1 z-10 text-left">
-                                            <span className="text-[10px] font-bold text-orange-800/80 leading-tight line-clamp-1 block">
+                                        <div className="absolute bottom-[11px] left-[21px] right-1 z-10 text-left">
+                                            <span className="text-[11px] font-bold text-orange-800/80 leading-tight line-clamp-1 block">
                                                 {holidayData.name}
                                             </span>
                                         </div>

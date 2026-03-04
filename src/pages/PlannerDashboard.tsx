@@ -168,7 +168,7 @@ const PlannerDashboard: React.FC = () => {
                     activeTab === 'roles' ? 'Rollenverwaltung' :
                       activeTab === 'rules' ? 'Dienstplanregeln' :
                         activeTab === 'my-shifts' ? 'Meine Schichten' :
-                          activeTab === 'my-availability' ? 'Meine Verfügbarkeiten' : 'Auslastung & Analyse'}
+                          activeTab === 'my-availability' ? 'Verfügbarkeiten eintragen' : 'Auslastung & Analyse'}
             </h1>
             {(activeTab === 'calendar' || activeTab === 'new-plan') && (
               <div className="flex items-center bg-white border rounded-xl px-1 py-0.5 shadow-sm">
@@ -418,9 +418,6 @@ const PlannerDashboard: React.FC = () => {
 
         {activeTab === 'my-availability' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-slate-800">Verfügbarkeiten verwalten</h2>
-            </div>
             <AvailabilityCalendar
               currentMonth={currentMonth}
               onMonthChange={setCurrentMonth}
