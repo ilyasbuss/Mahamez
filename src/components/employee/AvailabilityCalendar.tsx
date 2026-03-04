@@ -454,7 +454,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                         </>
                                     )}
 
-                                    {/* Event band — runs across top of cell like KW badge */}
+                                    {/* Event band — runs across top of cell */}
                                     {isCurrentMonth && (() => {
                                         const activeEvents = events.filter(ev =>
                                             (ev.planIds.length === 0 || (currentPlanId && ev.planIds.includes(currentPlanId))) &&
@@ -462,21 +462,27 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                         );
                                         if (activeEvents.length === 0) return null;
                                         const ev = activeEvents[0];
-                                        const isFirst = ev.startDate === dateStr;
-                                        const isLast = ev.endDate === dateStr;
-                                        const nextDayIsEvent = !isLast;
+                                        const isFirstDayOfEvent = ev.startDate === dateStr;
+                                        const isLastDayOfEvent = ev.endDate === dateStr;
+
+                                        // Find visible days in current week to center text
+                                        const weekStart = startOfWeek(day, { weekStartsOn: 1 });
+                                        const currentWeekDays = [0, 1, 2, 3, 4, 5, 6].map(i => addDays(weekStart, i));
+                                        const visibleEventDaysInWeek = currentWeekDays.filter(d => {
+                                            const s = format(d, 'yyyy-MM-dd');
+                                            return s >= ev.startDate && s <= ev.endDate;
+                                        });
+                                        const middleDay = visibleEventDaysInWeek[Math.floor(visibleEventDaysInWeek.length / 2)];
+                                        const showName = isSameDay(day, middleDay);
+
                                         return (
                                             <div
-                                                className={`absolute top-0 left-0 right-0 h-[18px] bg-[#4B2C82] flex items-center justify-center z-[25] overflow-visible ${isFirst ? 'rounded-tl-xl' : '-left-[7px] pl-[7px]'
-                                                    } ${isLast ? 'rounded-tr-xl' : '-right-[7px] pr-[7px]'
+                                                className={`absolute top-0 h-[18px] bg-[#4B2C82] flex items-center justify-center z-[25] overflow-visible ${isFirstDayOfEvent ? 'rounded-tl-xl left-0' : '-left-[4px] pl-[4px]'
+                                                    } ${isLastDayOfEvent ? 'rounded-tr-xl right-0' : '-right-[4px] pr-[4px]'
                                                     }`}
-                                                style={{
-                                                    left: isFirst ? 0 : '-7px',
-                                                    right: isLast ? 0 : '-7px',
-                                                }}
                                             >
-                                                {isFirst && (
-                                                    <span className="text-[8px] font-bold text-white/90 truncate px-1">{ev.name}</span>
+                                                {showName && (
+                                                    <span className="text-[10px] font-bold text-white/90 truncate px-1 whitespace-nowrap">{ev.name}</span>
                                                 )}
                                             </div>
                                         );
@@ -489,7 +495,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                             dateStr >= ev.startDate && dateStr <= ev.endDate
                                         );
                                         return (
-                                            <div className={`absolute ${hasEvent ? 'top-[18px]' : 'top-0'} left-0 bg-[#1D0B40] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-br-lg shadow-sm z-20`}>
+                                            <div className={`absolute ${hasEvent ? 'top-[18px] rounded-br-lg' : 'top-0 rounded-tl-xl rounded-br-lg'} left-0 bg-[#1D0B40] text-white text-[8px] font-bold px-1.5 py-0.5 shadow-sm z-[26]`}>
                                                 KW {getISOWeek(day)}
                                             </div>
                                         );
@@ -544,22 +550,28 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                     </span>
 
                                     {/* State Badges Top Right */}
-                                    {(bwHoliday || rpHoliday || isBwSchool || isRpSchool) && isCurrentMonth && (
-                                        <div className="absolute top-1 right-1.5 z-20">
-                                            <div className="flex gap-0.5">
-                                                {(bwHoliday || isBwSchool) && (
-                                                    <span className={`text-[7px] font-bold text-white px-1 py-0.5 rounded shadow-sm ${bwHoliday ? 'bg-orange-400' : 'bg-orange-300'}`}>
-                                                        BW
-                                                    </span>
-                                                )}
-                                                {(rpHoliday || isRpSchool) && (
-                                                    <span className={`text-[7px] font-bold text-white px-1 py-0.5 rounded shadow-sm ${rpHoliday ? 'bg-blue-400' : 'bg-blue-300'}`}>
-                                                        RP
-                                                    </span>
-                                                )}
+                                    {(bwHoliday || rpHoliday || isBwSchool || isRpSchool) && isCurrentMonth && (() => {
+                                        const hasEvent = events && events.some(ev =>
+                                            (ev.planIds.length === 0 || (currentPlanId && ev.planIds.includes(currentPlanId))) &&
+                                            dateStr >= ev.startDate && dateStr <= ev.endDate
+                                        );
+                                        return (
+                                            <div className={`absolute ${hasEvent ? 'top-[20px]' : 'top-1'} right-1.5 z-20 transition-all`}>
+                                                <div className="flex gap-0.5">
+                                                    {(bwHoliday || isBwSchool) && (
+                                                        <span className={`text-[7px] font-bold text-white px-1 py-0.5 rounded shadow-sm ${bwHoliday ? 'bg-orange-400' : 'bg-orange-300'}`}>
+                                                            BW
+                                                        </span>
+                                                    )}
+                                                    {(rpHoliday || isRpSchool) && (
+                                                        <span className={`text-[7px] font-bold text-white px-1 py-0.5 rounded shadow-sm ${rpHoliday ? 'bg-blue-400' : 'bg-blue-300'}`}>
+                                                            RP
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        );
+                                    })()}
                                 </button>
                             );
                         })}
