@@ -319,7 +319,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                             </>
                         ) : (
                             <>
-                                <CheckCircle2 size={13} className="text-emerald-500" />
+                                <CheckCircle2 size={13} className="text-[#4B2C82]" />
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                                     {lastSaved
                                         ? `Gespeichert ${lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
@@ -404,22 +404,21 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                         relative flex flex-col items-center border transition-all duration-200 py-4 px-2 min-h-[90px] rounded-xl
                                         ${!isCurrentMonth ? 'opacity-40 bg-slate-50/30 border-slate-200/60 hover:opacity-60' : ''}
                                         ${isCurrentMonth && isUnavailable && avail!.status === 'unavailable_full'
-                                            ? 'border-red-300 bg-red-50/80'
+                                            ? 'border-red-300 bg-red-50/80 hover:z-30'
                                             : isCurrentMonth && isUnavailable && avail!.status === 'vacation'
-                                                ? 'border-blue-300 bg-blue-50/80'
+                                                ? 'border-blue-300 bg-blue-50/80 hover:z-30'
                                                 : isCurrentMonth && isUnavailable && (avail!.status === 'unavailable_from' || avail!.status === 'unavailable_until')
-                                                    ? 'border-red-300 bg-white'
+                                                    ? 'border-red-300 bg-white hover:z-30'
                                                     : isCurrentMonth && holidayData
-                                                        ? 'bg-amber-50 border-orange-400/60 shadow-sm z-10'
+                                                        ? 'bg-amber-50 border-orange-400/60 shadow-sm hover:z-30'
                                                         : isCurrentMonth && isSchool
-                                                            ? 'bg-orange-50/50 border-slate-200'
+                                                            ? 'bg-orange-50/50 border-slate-200 hover:z-30'
                                                             : isCurrentMonth && isWknd
-                                                                ? 'bg-purple-50 border-purple-200'
+                                                                ? 'bg-purple-50 border-purple-200 hover:z-30'
                                                                 : isCurrentMonth
-                                                                    ? 'bg-white border-slate-200 hover:border-purple-300 hover:shadow-md z-10'
+                                                                    ? 'bg-white border-slate-200 hover:border-purple-300 hover:shadow-md hover:z-30'
                                                                     : ''
                                         }
-                                        ${isUnavailable ? 'z-10' : 'z-20'}
                                     `}
                                 >
                                     {/* Partial time coloring overlay — #fcf4f4 = same shade as full-day */}
@@ -465,26 +464,35 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                         const isFirstDayOfEvent = ev.startDate === dateStr;
                                         const isLastDayOfEvent = ev.endDate === dateStr;
 
+                                        const roundLeft = isFirstDayOfEvent || isMonday;
+                                        const roundRight = isLastDayOfEvent || isSunday;
+
                                         // Find visible days in current week to center text
                                         const weekStart = startOfWeek(day, { weekStartsOn: 1 });
                                         const currentWeekDays = [0, 1, 2, 3, 4, 5, 6].map(i => addDays(weekStart, i));
                                         const visibleEventDaysInWeek = currentWeekDays.filter(d => {
                                             const s = format(d, 'yyyy-MM-dd');
-                                            return s >= ev.startDate && s <= ev.endDate;
+                                            return s >= ev.startDate && s <= ev.endDate && s >= format(monthStart, 'yyyy-MM-dd') && s <= format(monthEnd, 'yyyy-MM-dd');
                                         });
-                                        const middleDay = visibleEventDaysInWeek[Math.floor(visibleEventDaysInWeek.length / 2)];
-                                        const showName = isSameDay(day, middleDay);
+                                        const visibleDaysCount = visibleEventDaysInWeek.length;
+                                        const isFirstVisibleDayInWeek = format(visibleEventDaysInWeek[0], 'yyyy-MM-dd') === dateStr;
 
                                         return (
-                                            <div
-                                                className={`absolute top-0 h-[18px] bg-[#4B2C82] flex items-center justify-center z-[25] overflow-visible ${isFirstDayOfEvent ? 'rounded-tl-xl left-0' : '-left-[4px] pl-[4px]'
-                                                    } ${isLastDayOfEvent ? 'rounded-tr-xl right-0' : '-right-[4px] pr-[4px]'
-                                                    }`}
-                                            >
-                                                {showName && (
-                                                    <span className="text-[10px] font-bold text-white/90 truncate px-1 whitespace-nowrap">{ev.name}</span>
+                                            <>
+                                                <div
+                                                    className={`absolute -top-[1px] h-[19px] bg-[#4B2C82] z-[25] overflow-visible ${roundLeft ? 'rounded-tl-xl -left-[1px]' : '-left-[4px]'
+                                                        } ${roundRight ? 'rounded-tr-xl -right-[1px]' : '-right-[4px]'
+                                                        }`}
+                                                />
+                                                {isFirstVisibleDayInWeek && (
+                                                    <div
+                                                        className="absolute -top-[1px] left-[-1px] h-[19px] flex items-center justify-center pointer-events-none z-[30]"
+                                                        style={{ width: `calc(${visibleDaysCount} * 100% + ${visibleDaysCount - 1} * 6px + 2px)` }}
+                                                    >
+                                                        <span className="text-[10px] font-bold text-white/90 truncate px-2">{ev.name}</span>
+                                                    </div>
                                                 )}
-                                            </div>
+                                            </>
                                         );
                                     })()}
 
@@ -495,7 +503,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                             dateStr >= ev.startDate && dateStr <= ev.endDate
                                         );
                                         return (
-                                            <div className="absolute top-0 left-0 bg-[#1D0B40] text-white text-[8px] font-bold px-1.5 py-[3px] rounded-tl-xl rounded-br-lg shadow-sm z-[26]">
+                                            <div className={`absolute -top-[1px] -left-[1px] bg-[#4B2C82] text-white text-[10px] font-bold px-1.5 h-[19px] flex items-center rounded-tl-xl ${!hasEvent ? 'rounded-br-lg shadow-sm' : ''} z-[26]`}>
                                                 KW {getISOWeek(day)}
                                             </div>
                                         );
@@ -503,8 +511,8 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
 
                                     {/* Holiday Name — anchored bottom next to day number */}
                                     {holidayData && isCurrentMonth && (
-                                        <div className="absolute bottom-[9px] left-7 right-1 z-10 text-left">
-                                            <span className="text-[9px] font-bold text-orange-800/80 leading-tight line-clamp-1 block">
+                                        <div className="absolute bottom-[9px] left-[23px] right-1 z-10 text-left">
+                                            <span className="text-[10px] font-bold text-orange-800/80 leading-tight line-clamp-1 block">
                                                 {holidayData.name}
                                             </span>
                                         </div>
