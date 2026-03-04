@@ -90,7 +90,7 @@ export const usePlannerDashboard = () => {
     const [deleteTimer, setDeleteTimer] = useState(0);
     const timerRef = useRef<number | null>(null);
     const [roleTabFilters, setRoleTabFilters] = useState<Redaktion[]>([]);
-    const [selectedDept, setSelectedDept] = useState<string>('Radioredaktion');
+    const [selectedDept, setSelectedDept] = useState<string>('Alle');
 
     const [shadowingRows, setShadowingRows] = useState<Set<string>>(new Set());
 
@@ -361,7 +361,9 @@ export const usePlannerDashboard = () => {
 
     const filteredSkillGroups = useMemo(() => {
         let filtered = skillGroups;
-        if (selectedDept === 'Moderation') {
+        if (selectedDept === 'Alle') {
+            return skillGroups;
+        } else if (selectedDept === 'Moderation') {
             filtered = skillGroups.filter(g => g.id === 'g_moderation');
         } else if (selectedDept === 'Onlineredaktion') {
             filtered = skillGroups.filter(g =>

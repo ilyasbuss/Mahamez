@@ -97,16 +97,15 @@ const ShiftCalendar: React.FC<ShiftCalendarProps> = ({
                             );
 
                             // Calculate if name should be shown in this cell (centered in visible part)
-                            let showName = false;
+                            let isFirstVisibleDay = false;
+                            let visibleDaysCount = 0;
                             if (activeEvent) {
                                 const visibleDays = weekDays.filter(d => {
                                     const s = format(d, 'yyyy-MM-dd');
                                     return s >= activeEvent.startDate && s <= activeEvent.endDate;
                                 });
-                                const middleDay = visibleDays[Math.floor(visibleDays.length / 2)];
-                                if (isSameDay(day, middleDay)) {
-                                    showName = true;
-                                }
+                                visibleDaysCount = visibleDays.length;
+                                isFirstVisibleDay = format(visibleDays[0], 'yyyy-MM-dd') === ds;
                             }
 
                             return (
@@ -115,15 +114,20 @@ const ShiftCalendar: React.FC<ShiftCalendarProps> = ({
 
                                     {activeEvent && (
                                         <div
-                                            className="absolute top-0 left-0 right-0 h-5 bg-[#4B2C82] flex items-center justify-center overflow-hidden z-20"
+                                            className="absolute top-0 left-0 right-0 h-5 bg-[#4B2C82] z-20"
                                             style={{
                                                 left: activeEvent.startDate === ds ? 0 : '-1px',
                                                 right: activeEvent.endDate === ds ? 0 : '-1px',
                                             }}
+                                        />
+                                    )}
+
+                                    {activeEvent && isFirstVisibleDay && (
+                                        <div
+                                            className="absolute top-0 left-0 h-5 flex items-center justify-center pointer-events-none z-[25]"
+                                            style={{ width: `calc(${visibleDaysCount} * 100%)` }}
                                         >
-                                            {showName && (
-                                                <span className="text-[10px] font-bold text-white/90 truncate px-2">{activeEvent.name}</span>
-                                            )}
+                                            <span className="text-[10px] font-bold text-white/90 truncate px-2">{activeEvent.name}</span>
                                         </div>
                                     )}
 

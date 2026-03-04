@@ -102,7 +102,6 @@ const PlannerDashboard: React.FC = () => {
   const [newEventName, setNewEventName] = React.useState('');
   const [newEventStart, setNewEventStart] = React.useState('');
   const [newEventEnd, setNewEventEnd] = React.useState('');
-  const [newEventDepts, setNewEventDepts] = React.useState<string[]>([]);
 
   const onSaveEvent = () => {
     if (!newEventName.trim() || !newEventStart || !newEventEnd) return;
@@ -111,14 +110,13 @@ const PlannerDashboard: React.FC = () => {
       name: newEventName.trim(),
       startDate: newEventStart,
       endDate: newEventEnd,
-      planIds: newEventDepts, // Reusing planIds field for departments as requested
+      planIds: [], // Event applies to all now as requested
     };
     handleSaveEvent(ev);
     setIsEventModalOpen(false);
     setNewEventName('');
     setNewEventStart('');
     setNewEventEnd('');
-    setNewEventDepts([]);
   };
 
   const statsData = useMemo(() => {
@@ -264,12 +262,11 @@ const PlannerDashboard: React.FC = () => {
 
         {(activeTab === 'calendar' || activeTab === 'new-plan') && (
           <div className="flex gap-2 mb-4">
-            {['Radioredaktion', 'Moderation', 'Onlineredaktion'].map((dept) => (
+            {['Alle', 'Radioredaktion', 'Moderation', 'Onlineredaktion'].map((dept) => (
               <button
                 key={dept}
                 onClick={() => {
                   setSelectedDept(dept);
-                  // Handled by selectedDept in filteredSkillGroups
                 }}
                 className={`px-6 py-2.5 rounded-2xl font-bold text-sm transition-all shadow-sm ${selectedDept === dept
                   ? 'bg-[#4B2C82] text-white shadow-lg shadow-purple-900/20'
@@ -538,11 +535,11 @@ const PlannerDashboard: React.FC = () => {
             <div className="space-y-4">
               {/* Name */}
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Eventname</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Name</label>
                 <input
                   type="text"
                   autoFocus
-                  placeholder="Eventname eingeben..."
+                  placeholder="Name eingeben..."
                   value={newEventName}
                   onChange={e => setNewEventName(e.target.value)}
                   className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-[#4B2C82] font-bold text-slate-800 bg-slate-50"
@@ -558,31 +555,6 @@ const PlannerDashboard: React.FC = () => {
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Bis</label>
                   <DatePickerPopup value={newEventEnd} onChange={setNewEventEnd} min={newEventStart || undefined} placeholder="Enddatum" />
-                </div>
-              </div>
-
-              {/* Redaktion assignment */}
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
-                  Für welche Redaktionen? <span className="text-slate-300 normal-case font-medium">(leer = alle)</span>
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {redaktionen.map(dept => {
-                    const isSelected = newEventDepts.includes(dept);
-                    return (
-                      <button
-                        key={dept}
-                        type="button"
-                        onClick={() => setNewEventDepts(prev =>
-                          isSelected ? prev.filter(p => p !== dept) : [...prev, dept]
-                        )}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold border-2 transition-all ${isSelected ? 'border-[#4B2C82] bg-purple-50 text-[#4B2C82]' : 'border-slate-200 text-slate-500 hover:border-slate-300'
-                          }`}
-                      >
-                        {dept}
-                      </button>
-                    );
-                  })}
                 </div>
               </div>
 

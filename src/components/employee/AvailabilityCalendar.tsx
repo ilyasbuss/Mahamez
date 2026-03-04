@@ -488,23 +488,23 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                         );
                                     })()}
 
-                                    {/* Monday KW Banner — pushed down if event band present */}
+                                    {/* Monday KW Banner — sits seamlessly with event band if present */}
                                     {isMonday && isCurrentMonth && (() => {
                                         const hasEvent = events.some(ev =>
                                             (ev.planIds.length === 0 || (currentPlanId && ev.planIds.includes(currentPlanId))) &&
                                             dateStr >= ev.startDate && dateStr <= ev.endDate
                                         );
                                         return (
-                                            <div className={`absolute ${hasEvent ? 'top-[18px] rounded-br-lg' : 'top-0 rounded-tl-xl rounded-br-lg'} left-0 bg-[#1D0B40] text-white text-[8px] font-bold px-1.5 py-0.5 shadow-sm z-[26]`}>
+                                            <div className="absolute top-0 left-0 bg-[#1D0B40] text-white text-[8px] font-bold px-1.5 py-[3px] rounded-tl-xl rounded-br-lg shadow-sm z-[26]">
                                                 KW {getISOWeek(day)}
                                             </div>
                                         );
                                     })()}
 
-                                    {/* Holiday Name — anchored bottom-left above day number */}
+                                    {/* Holiday Name — anchored bottom next to day number */}
                                     {holidayData && isCurrentMonth && (
-                                        <div className="absolute bottom-7 left-2 right-2 z-10">
-                                            <span className="text-[9px] font-bold text-orange-800/80 leading-tight line-clamp-2 block">
+                                        <div className="absolute bottom-[9px] left-7 right-1 z-10 text-left">
+                                            <span className="text-[9px] font-bold text-orange-800/80 leading-tight line-clamp-1 block">
                                                 {holidayData.name}
                                             </span>
                                         </div>
