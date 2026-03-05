@@ -8,10 +8,13 @@ import { de } from 'date-fns/locale';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface DatePickerPopupProps {
-    value: string;       // "YYYY-MM-DD" or ""
+    value: string;       // "YYYY-MM-DD" or "" or "open"
     onChange: (date: string) => void;
     min?: string;        // "YYYY-MM-DD" – earlier dates are disabled
     placeholder?: string;
+    showIndefinite?: boolean;
+    isOpen?: boolean;
+    onOpenChange?: (open: boolean) => void;
 }
 
 const WEEKDAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
@@ -21,10 +24,23 @@ const DatePickerPopup: React.FC<DatePickerPopupProps> = ({
     onChange,
     min,
     placeholder = 'Datum wählen',
+    showIndefinite = false,
+    isOpen: controlledIsOpen,
+    onOpenChange,
 }) => {
-    const [isOpen, setIsOpen] = useState(false);
+    const [internalIsOpen, setInternalIsOpen] = useState(false);
+    const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
+
+    const setIsOpen = (open: boolean) => {
+        if (onOpenChange) {
+            onOpenChange(open);
+        } else {
+            setInternalIsOpen(open);
+        }
+    };
+
     const [viewMonth, setViewMonth] = useState<Date>(() => {
-        if (value) return startOfMonth(parseISO(value));
+        if (value && value !== 'open') return startOfMonth(parseISO(value));
         if (min) return startOfMonth(parseISO(min));
         return startOfMonth(new Date());
     });
@@ -42,7 +58,7 @@ const DatePickerPopup: React.FC<DatePickerPopupProps> = ({
         return () => document.removeEventListener('mousedown', handler);
     }, [isOpen]);
 
-    const selectedDate = value ? parseISO(value) : null;
+    const selectedDate = (value && value !== 'open') ? parseISO(value) : null;
     const minDate = min ? parseISO(min) : null;
 
     const monthStart = startOfMonth(viewMonth);
@@ -61,28 +77,30 @@ const DatePickerPopup: React.FC<DatePickerPopupProps> = ({
         setIsOpen(false);
     };
 
-    const displayValue = selectedDate
-        ? format(selectedDate, 'dd. MMMM yyyy', { locale: de })
-        : placeholder;
+    const displayValue = value === 'open'
+        ? '∞'
+        : selectedDate
+            ? format(selectedDate, 'dd. MMMM yyyy', { locale: de })
+            : placeholder;
 
     return (
         <div ref={containerRef} className="relative">
             {/* Trigger */}
             <button
                 type="button"
-                onClick={() => setIsOpen(prev => !prev)}
+                onClick={() => setIsOpen(!isOpen)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 font-medium text-left transition-all duration-200 ${isOpen
                     ? 'border-[#4B2C82] bg-purple-50/40'
                     : 'border-slate-200 bg-slate-50 hover:border-slate-300'
-                    } ${selectedDate ? 'text-slate-800' : 'text-slate-400'}`}
+                    } ${value ? 'text-slate-800' : 'text-slate-400'}`}
             >
                 <Calendar size={16} className={isOpen ? 'text-[#4B2C82]' : 'text-slate-400'} />
-                <span className="text-[15px] font-bold">{displayValue}</span>
+                <span className={`text-[15px] font-bold ${value === 'open' ? 'text-xl leading-none' : ''}`}>{displayValue}</span>
             </button>
 
             {/* Popup */}
             {isOpen && (
-                <div className="absolute left-0 right-0 top-full mt-2 z-[300] bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden animate-in zoom-in-95 slide-in-from-top-1 duration-150 origin-top">
+                <div className="absolute left-0 right-0 top-full mt-2 z-[300] bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden animate-in zoom-in-95 slide-in-from-top-1 duration-150 origin-top min-w-[280px]">
                     {/* Month nav header */}
                     <div className="flex items-center justify-between px-3 py-2.5 bg-[#1D0B40]">
                         <button
@@ -114,7 +132,7 @@ const DatePickerPopup: React.FC<DatePickerPopupProps> = ({
                     </div>
 
                     {/* Day grid */}
-                    <div className="grid grid-cols-7 gap-y-0.5 px-2 pb-3">
+                    <div className="grid grid-cols-7 gap-y-0.5 px-2 pb-3 border-b border-slate-100">
                         {days.map(day => {
                             const inCurrentMonth = day.getMonth() === viewMonth.getMonth();
                             const selected = selectedDate ? isSameDay(day, selectedDate) : false;
@@ -149,6 +167,25 @@ const DatePickerPopup: React.FC<DatePickerPopupProps> = ({
                             );
                         })}
                     </div>
+
+                    {/* Indefinite Footer */}
+                    {showIndefinite && (
+                        <div className="p-2 bg-slate-50/50">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    onChange('open');
+                                    setIsOpen(false);
+                                }}
+                                className={`w-full py-2 rounded-xl text-[12px] font-bold transition-all ${value === 'open'
+                                    ? 'bg-[#4B2C82] text-white'
+                                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                                    }`}
+                            >
+                                auf unbestimmte Zeit
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

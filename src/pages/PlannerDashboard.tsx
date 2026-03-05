@@ -77,7 +77,7 @@ const PlannerDashboard: React.FC = () => {
     shadowingRows, allRolesWithShadowing,
     activeNotifications, notificationsHistory,
     markAsRead,
-    handleAiOptimize, addManualShift, deleteShift,
+    handleAutofill, addManualShift, deleteShift,
     handleDeleteRole, handleDeleteGroup,
     handleOpenAddModal, handleOpenEditModal, handleSaveEmployee,
     confirmDeleteAction, handleCloseModal, handlePreviousWeek, handleNextWeek,
@@ -203,14 +203,14 @@ const PlannerDashboard: React.FC = () => {
                     <CalendarIcon size={15} className="text-[#4B2C82]" />
                     <span>Event erstellen</span>
                   </button>
-                  <button onClick={handleAiOptimize} disabled={isAiLoading} className="bg-[#4B2C82] hover:bg-[#5B3798] text-white px-8 h-9 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2">
+                  <button onClick={handleAutofill} disabled={isAiLoading} className="bg-[#4B2C82] hover:bg-[#5B3798] text-white px-8 h-9 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2">
                     <Sparkles size={16} className="text-[#9F7AEA]" />
                     <span>Autofill</span>
                   </button>
                 </>
               ) : activeTab === 'rules' ? (
-                <button onClick={handleAiOptimize} disabled={isAiLoading} className="bg-[#4B2C82] hover:bg-[#5B3798] text-white px-8 h-9 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2">
-                  {isAiLoading ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> : <><Sparkles size={16} className="text-[#9F7AEA]" /><span>Regel erstellen</span></>}
+                <button onClick={handleAutofill} disabled={isAiLoading} className="bg-[#4B2C82] hover:bg-[#5B3798] text-white px-8 h-9 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2">
+                  {isAiLoading ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> : <><Plus size={16} className="text-[#9F7AEA]" /><span>Regel erstellen</span></>}
                 </button>
               ) : null}
             </div>

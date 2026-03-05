@@ -26,12 +26,12 @@ node -v
 cd /d "%PROJECT_ROOT%"
 
 if not exist "node_modules\" (
-    echo [INFO] node_modules not found. Running setup...
+    echo [INFO] node_modules not found. Running full setup...
     call npm run setup
 ) else (
     if not exist "backend\node_modules\" (
         echo [INFO] backend node_modules not found. Running backend setup...
-        call npm run setup:backend
+        cd backend && call npm install && cd ..
     )
 )
 

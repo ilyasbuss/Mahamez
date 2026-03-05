@@ -35,13 +35,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, []);
 
-    const login = (token: string, refresh: string, userData: User) => {
-        setAccessToken(token);
-        setUser(userData);
-        setIsAuthenticated(true);
-        localStorage.setItem('mahamez_access_token', token);
-        localStorage.setItem('mahamez_refresh_token', refresh);
-        localStorage.setItem('mahamez_user', JSON.stringify(userData));
+    const login = async (email: string, password: string) => {
+        try {
+            const response = await fetch('http://localhost:8000/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Login fehlgeschlagen');
+            }
+
+            const { token, user: userData } = await response.json();
+
+            setAccessToken(token);
+            setUser(userData);
+            setIsAuthenticated(true);
+            localStorage.setItem('mahamez_access_token', token);
+            localStorage.setItem('mahamez_user', JSON.stringify(userData));
+        } catch (error) {
+            console.error('Login error:', error);
+            throw error;
+        }
     };
 
     const logout = useCallback(() => {

@@ -4,14 +4,16 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev:server": "tsx backend/server.ts",
+    "dev:client": "vite",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
-    "compile": "tsc --noEmit"
+    "compile": "tsc --noEmit",
+    "setup": "npm install && cd backend && npm install"
   },
   "dependencies": {
-    "@google/genai": "^1.40.0",
     "@tailwindcss/vite": "^4.0.0-beta.8",
     "@types/uuid": "^10.0.0",
     "bcryptjs": "^3.0.3",

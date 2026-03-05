@@ -374,11 +374,25 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
 
                             // For cell-wide event tracking:
                             const cellEvents = isCurrentMonth ? events.filter(ev =>
-                                (!currentPlanId || !ev.planIds || ev.planIds.length === 0 || ev.planIds.includes(currentPlanId)) &&
+                                (!ev.planIds || ev.planIds.length === 0 || !currentPlanId || ev.planIds.includes(currentPlanId)) &&
                                 dateStr >= ev.startDate && dateStr <= ev.endDate
                             ) : [];
                             const hasEvent = cellEvents.length > 0;
                             const activeEvent = hasEvent ? cellEvents[0] : null;
+
+                            // Calculate week-segment properties for the bar
+                            let visibleDaysCount = 0;
+                            let startOffsetDays = -1;
+                            if (activeEvent) {
+                                const weekStart = startOfWeek(day, { weekStartsOn: 1 });
+                                const currentWeekDays = [0, 1, 2, 3, 4, 5, 6].map(i => addDays(weekStart, i));
+                                const visibleEventDaysInWeek = currentWeekDays.filter(d => {
+                                    const s = format(d, 'yyyy-MM-dd');
+                                    return s >= activeEvent.startDate && s <= activeEvent.endDate && s >= format(monthStart, 'yyyy-MM-dd') && s <= format(monthEnd, 'yyyy-MM-dd');
+                                });
+                                visibleDaysCount = visibleEventDaysInWeek.length;
+                                startOffsetDays = visibleEventDaysInWeek.findIndex(d => format(d, 'yyyy-MM-dd') === dateStr);
+                            }
 
                             return (
                                 <button
@@ -409,7 +423,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                     }}
                                     className={`
                                         relative flex flex-col items-center border transition-all duration-200 py-4 px-2 min-h-[90px] rounded-xl
-                                        ${!isCurrentMonth ? 'opacity-50 bg-slate-50/30 border-slate-200/60' : ''}
+                                        ${!isCurrentMonth ? 'opacity-70 bg-slate-50/30 border-slate-200/60' : ''}
                                         ${isCurrentMonth && isUnavailable && avail!.status === 'unavailable_full'
                                             ? 'border-red-300 bg-red-50/80 z-20'
                                             : isCurrentMonth && isUnavailable && avail!.status === 'vacation'
@@ -426,6 +440,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                                                     ? 'bg-white border-slate-200 z-10'
                                                                     : ''
                                         }
+                                        ${startOffsetDays === 0 ? '!z-[35]' : ''}
                                     `}
                                 >
                                     {/* Partial time coloring overlay — #fcf4f4 = same shade as full-day */}
@@ -468,16 +483,6 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                         const roundLeft = isFirstDayOfEvent || isMonday;
                                         const roundRight = isLastDayOfEvent || isSunday;
 
-                                        // Find visible days in current week to center text
-                                        const weekStart = startOfWeek(day, { weekStartsOn: 1 });
-                                        const currentWeekDays = [0, 1, 2, 3, 4, 5, 6].map(i => addDays(weekStart, i));
-                                        const visibleEventDaysInWeek = currentWeekDays.filter(d => {
-                                            const s = format(d, 'yyyy-MM-dd');
-                                            return s >= activeEvent.startDate && s <= activeEvent.endDate && s >= format(monthStart, 'yyyy-MM-dd') && s <= format(monthEnd, 'yyyy-MM-dd');
-                                        });
-                                        const visibleDaysCount = visibleEventDaysInWeek.length;
-                                        const startOffsetDays = visibleEventDaysInWeek.findIndex(d => format(d, 'yyyy-MM-dd') === dateStr);
-
                                         return (
                                             <>
                                                 <div
@@ -485,12 +490,12 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                                                         } ${roundRight ? 'rounded-tr-xl -right-[1px]' : '-right-[4px]'
                                                         }`}
                                                 />
-                                                {startOffsetDays !== -1 && (
+                                                {startOffsetDays === 0 && (
                                                     <div
                                                         className="absolute -top-[1px] h-[19px] flex items-center justify-center pointer-events-none z-[30]"
                                                         style={{
-                                                            width: `calc(${visibleDaysCount} * 100% + ${visibleDaysCount - 1} * 6px + 2px)`,
-                                                            left: `calc(-${startOffsetDays} * 100% - ${startOffsetDays} * 6px - 1px)`
+                                                            width: `calc(${visibleDaysCount} * 100% + ${Math.max(0, visibleDaysCount - 1)} * 6px + 2px)`,
+                                                            left: '-1px'
                                                         }}
                                                     >
                                                         <span className="text-[10px] font-bold text-white/90 truncate px-2">{activeEvent.name}</span>

@@ -18,21 +18,16 @@ const Login: React.FC = () => {
         setError(null);
         setLoading(true);
 
-        // Mock login for UX demonstration
-        setTimeout(() => {
-            if (email === 'planer@swr.de' && password === 'Passwort123') {
-                const mockUser: User = { id: 1, email: 'planer@swr.de', name: 'Planer Admin', role: 'planer' };
-                login('mock_token', 'mock_refresh', mockUser);
-                navigate('/planner');
-            } else if (email === 'user@swr.de' && password === 'Passwort123') {
-                const mockUser: User = { id: 2, email: 'user@swr.de', name: 'Mitarbeiter User', role: 'mitarbeiter' };
-                login('mock_token', 'mock_refresh', mockUser);
-                navigate('/availability');
-            } else {
-                setError("Ungültige Anmeldedaten. (Demo: planer@swr.de / Passwort123 oder user@swr.de / Passwort123)");
-            }
+        try {
+            await login(email, password);
+            // Context will automatically redirect via ProtectedRoute once user is set
+            // But we can also manually navigate for clarity
+            navigate('/planner');
+        } catch (err: any) {
+            setError(err.message || "Anmeldung fehlgeschlagen");
+        } finally {
             setLoading(false);
-        }, 800);
+        }
     };
 
     return (

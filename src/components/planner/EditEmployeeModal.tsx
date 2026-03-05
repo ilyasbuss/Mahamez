@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, X, ChevronUp, ChevronDown, CheckCircle2, PieChart as PieChartIcon, Lock, Unlock, Trash2, Mail, Plus, Calendar, Send } from 'lucide-react';
+import DatePickerPopup from '../employee/DatePickerPopup';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { Employee, SkillGroup, SkillAssignment, Skill, RoleDefinition, Redaktion } from '../../types';
 import { REDAKTIONS_OPTIONEN, COLORS, VERTRAGS_OPTIONEN } from '../../constants';
@@ -22,6 +23,8 @@ const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, employee,
     const [activePoolDropdown, setActivePoolDropdown] = useState<{ type: 'with' | 'without' } | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteTimer, setDeleteTimer] = useState(0);
+    const [activeDatePicker, setActiveDatePicker] = useState<'start' | 'end' | null>(null);
+    const [workspaceAbsence, setWorkspaceAbsence] = useState<{ start: string; end: string }>({ start: '', end: '' });
 
     useEffect(() => {
         let interval: number;
@@ -153,43 +156,57 @@ const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, employee,
                             <div className="space-y-2">
                                 <label className="block text-[10px] font-bold text-slate-400 uppercase">Abwesenheit eintragen</label>
                                 <div className="bg-purple-50/30 rounded-2xl p-4 border border-purple-100 space-y-3">
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex-1 relative">
-                                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4B2C82] pointer-events-none"><Calendar size={14} /></div>
-                                            <input
-                                                type="date"
-                                                className="w-full pl-10 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-[#4B2C82] focus:ring-2 focus:ring-purple-100 transition-all appearance-none cursor-pointer"
-                                                onChange={(e) => {
-                                                    const start = e.target.value;
-                                                    if (!start) return;
-                                                    const currentAbs = editingEmployee.absences || [];
-                                                    setEditingEmployee({ ...editingEmployee, absences: [...currentAbs, { id: `${Date.now()}`, start, end: start }] });
-                                                }}
-                                            />
-                                        </div>
-                                        <span className="text-slate-400 font-bold text-xs uppercase">bis</span>
-                                        <div className="flex-1 relative">
-                                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4B2C82] pointer-events-none"><Calendar size={14} /></div>
-                                            <input
-                                                type="date"
-                                                className="w-full pl-10 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-[#4B2C82] focus:ring-2 focus:ring-purple-100 transition-all appearance-none cursor-pointer"
-                                                onChange={(e) => {
-                                                    const end = e.target.value;
-                                                    if (!end) return;
-                                                    const currentAbs = editingEmployee.absences || [];
-                                                    if (currentAbs.length > 0) {
-                                                        const last = currentAbs[currentAbs.length - 1];
-                                                        const next = [...currentAbs.slice(0, -1), { ...last, end }];
-                                                        setEditingEmployee({ ...editingEmployee, absences: next });
+                                    <div className="flex items-center justify-center gap-3">
+                                        <div className="w-[180px]">
+                                            <DatePickerPopup
+                                                value={workspaceAbsence.start}
+                                                isOpen={activeDatePicker === 'start'}
+                                                onOpenChange={(open) => setActiveDatePicker(open ? 'start' : null)}
+                                                onChange={(start) => {
+                                                    const next = { ...workspaceAbsence, start };
+                                                    setWorkspaceAbsence(next);
+                                                    if (next.start && next.end) {
+                                                        setEditingEmployee({ ...editingEmployee, absences: [...(editingEmployee.absences || []), { id: `${Date.now()}`, ...next }] });
+                                                        setWorkspaceAbsence({ start: '', end: '' });
+                                                        setActiveDatePicker(null);
+                                                    } else {
+                                                        setActiveDatePicker('end');
                                                     }
                                                 }}
+                                                placeholder="Beginn"
+                                            />
+                                        </div>
+                                        <span className="text-slate-400 font-bold text-xs uppercase shrink-0">bis</span>
+                                        <div className="w-[180px]">
+                                            <DatePickerPopup
+                                                value={workspaceAbsence.end}
+                                                isOpen={activeDatePicker === 'end'}
+                                                onOpenChange={(open) => setActiveDatePicker(open ? 'end' : null)}
+                                                onChange={(end) => {
+                                                    const next = { ...workspaceAbsence, end };
+                                                    setWorkspaceAbsence(next);
+                                                    if (next.start && next.end) {
+                                                        setEditingEmployee({ ...editingEmployee, absences: [...(editingEmployee.absences || []), { id: `${Date.now()}`, ...next }] });
+                                                        setWorkspaceAbsence({ start: '', end: '' });
+                                                        setActiveDatePicker(null);
+                                                    } else {
+                                                        setActiveDatePicker('start');
+                                                    }
+                                                }}
+                                                min={workspaceAbsence.start || undefined}
+                                                placeholder="Ende"
+                                                showIndefinite={true}
                                             />
                                         </div>
                                     </div>
                                     <div className="flex flex-wrap gap-2">
                                         {(editingEmployee.absences || []).map((abs) => (
                                             <div key={abs.id} className="flex items-center gap-2 px-3 py-1.5 bg-white border border-purple-100 rounded-xl text-[11px] font-bold text-[#4B2C82] shadow-sm animate-in fade-in slide-in-from-top-1">
-                                                <span>{abs.start} - {abs.end}</span>
+                                                <span className="flex items-center gap-1.5">
+                                                    {abs.start.split('-').reverse().join('.')}
+                                                    <span className="text-slate-300">bis</span>
+                                                    {abs.end === 'open' ? <span className="text-lg leading-none">∞</span> : abs.end.split('-').reverse().join('.')}
+                                                </span>
                                                 <button type="button" onClick={() => setEditingEmployee({ ...editingEmployee, absences: (editingEmployee.absences || []).filter(a => a.id !== abs.id) })} className="text-slate-300 hover:text-red-500 transition"><X size={12} /></button>
                                             </div>
                                         ))}

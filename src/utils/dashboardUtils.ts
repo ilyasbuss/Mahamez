@@ -39,3 +39,17 @@ export const formatEmployeeName = (name: string, allEmployees: Pick<Employee, 'n
 
     return name;
 };
+export const isEmployeeAvailable = (employee: Employee, date: string): boolean => {
+    if (!employee.absences || employee.absences.length === 0) return true;
+
+    return !employee.absences.some(abs => {
+        const start = abs.start;
+        const end = abs.end;
+
+        if (end === 'open') {
+            return date >= start;
+        }
+
+        return date >= start && date <= end;
+    });
+};

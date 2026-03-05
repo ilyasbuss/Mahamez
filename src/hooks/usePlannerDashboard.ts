@@ -2,8 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { startOfWeek, addDays, format, parseISO, subWeeks, addWeeks, getISOWeek } from 'date-fns';
 import { Employee, Shift, SkillGroup, RoleDefinition, Redaktion, SkillAssignment, ShiftTypeID, PartialAvailability, CalendarEvent } from '../types';
 import { INITIAL_EMPLOYEES, INITIAL_SKILL_GROUPS, VERTRAGS_OPTIONEN, REDAKTIONS_OPTIONEN } from '../constants';
-import { autoScheduleShifts } from '../services/geminiService';
-import { generateId, validatePercentageSum } from '../utils/dashboardUtils';
+import { generateId, validatePercentageSum, isEmployeeAvailable } from '../utils/dashboardUtils';
 
 interface AppNotification {
     id: string;
@@ -190,32 +189,25 @@ export const usePlannerDashboard = () => {
         setNotificationsHistory(prev => [...marked, ...prev].slice(0, 100));
     }, [activeNotifications]);
 
-    const handleAiOptimize = useCallback(async () => {
+    const handleAutofill = useCallback(async () => {
         setIsAiLoading(true);
-        const start = format(weekDays[0], 'yyyy-MM-dd');
-        const end = format(weekDays[6], 'yyyy-MM-dd');
+        // Simulation of rule-based autofill logic for the future
         try {
-            const suggestedShifts = await autoScheduleShifts(employees, start, end);
-            const newShifts: Shift[] = suggestedShifts.map((s) => ({
-                id: generateId(),
-                employeeId: s.employeeId || '',
-                date: s.date || '',
-                typeId: (s.typeId as ShiftTypeID) || 'MORNING',
-                roleName: (s as any).roleName || 'Sonstige'
-            }));
-            setShifts(prev => {
-                const otherWeeks = prev.filter(s => {
-                    const d = parseISO(s.date);
-                    return d < weekDays[0] || d > weekDays[6];
-                });
-                return [...otherWeeks, ...newShifts];
-            });
+            console.log("Autofill triggered: Rule-based logic will be implemented here.");
+
+            // NEW RULE: System excludes absent employees
+            // Implementation detail: Use isEmployeeAvailable(employee, date) to check if an employee 
+            // has an active absence (including indefinite ones) on a specific day.
+
+            // For now, we just wait a bit to show the loading state
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // alert("Regelbasiertes Autofill wird hier implementiert.");
             setActiveTab('calendar');
         } catch (err) {
-            console.error('AI Error:', err);
-            alert("Fehler bei der KI-Generierung.");
+            console.error('Autofill Error:', err);
         } finally { setIsAiLoading(false); }
-    }, [employees, weekDays]);
+    }, []);
 
     const addManualShift = useCallback((employeeId: string, date: string, roleName: string, customName?: string) => {
         const newShift: Shift = { id: generateId(), employeeId, date, typeId: 'MORNING', roleName, customName };
@@ -510,7 +502,7 @@ export const usePlannerDashboard = () => {
         filteredSkillGroups, rolesTabSkillGroups,
         activeNotifications, notificationsHistory,
         markAsRead, markAllAsRead,
-        handleAiOptimize, addManualShift, deleteShift,
+        handleAutofill, addManualShift, deleteShift,
         handleDeleteRole, handleDeleteGroup,
         handleOpenAddModal, handleOpenEditModal, handleSaveEmployee,
         confirmDeleteAction, handleCloseModal, handlePreviousWeek, handleNextWeek,
